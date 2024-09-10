@@ -11,7 +11,7 @@
             <div class="form-container">
                 <form action="" class="clip-form" id="videoForm">
                     <div class="form-title">Submit Your Clip</div>
-                    <div class="form-description">Your clip will be submitted to Collab Inc, our trusted content licensing partner.</div>
+                    <div class="form-description">Your clip will be submitted to Scheema Inc, our trusted content licensing partner.</div>
                     <div class="name-container">
                         <div class="firstName-container">
                             <label for="firstName">First Name</label>
@@ -24,7 +24,7 @@
                     </div>
                     <div class="email-container">
                         <label for="email-input">Email</label>
-                        <input type="text" id="email-input" name="email" placeholder="example@123.com*">
+                        <input type="text" id="email-input" name="email" placeholder="*Example@123.com*">
                     </div>
                     <div class="clip-container">
                         <div class="upload-options">
@@ -40,10 +40,13 @@
                         <div class="spacer"></div>
         
                         <div class="clip-box">
+                            <span class="file-name-label">No file chosen</span> 
                             <div class="clip-box-content">
+
                                 <span class="file-input-label">Choose a file</span>
-                                <input type="file" id="video" name="videoFile" accept="video/*" class="custom-file-input">
+                                <input type="file" id="video" name="videoFile" accept="video/*" class="custom-file-input" onchange="displayFileName()">
                             </div>
+                            
                         </div>
                         <div class="clip-platform invisible">
                             <label for="clip-platform">Clip Platform:</label>
@@ -136,7 +139,7 @@
                         </div>
                         <div class="paypal">
                             <label for="paypalEmail">PayPal Email</label>
-                            <input type="text" id="paypalEmail" name="paypalEmail" placeholder="example@123.com">
+                            <input type="text" id="paypalEmail" name="paypalEmail" placeholder="*Example@123.com">
                             <h4>Featured clips can generate earnings for you</h4>
                         </div>
                     </div>
@@ -168,7 +171,7 @@
                             </div>
                             <div class="agreement-two agreement">
                                 <input type="radio" name="clipGuidelines">
-                                <h5>My clip meets the <a href="">Clip Guidelines</a> (does not contain nudity, graphic violence, etc...)</h5>
+                                <h5>My clip meets the <a href="rights.pdf" target="_blank">Clip Guidelines</a> (does not contain nudity, graphic violence, etc...)</h5>
                             </div>
                             <div class="agreement-three agreement">
                                 <input type="radio" name="subscribe">
@@ -190,6 +193,20 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
 <script src="https://unpkg.com/dropbox/dist/Dropbox-sdk.min.js"></script>
 
+
+<script>
+    function displayFileName() {
+    const fileInput = document.getElementById('video');
+    const fileNameLabel = document.querySelector('.file-name-label');
+
+    if (fileInput.files.length > 0) {
+        fileNameLabel.textContent = fileInput.files[0].name; // Set the chosen file name
+    } else {
+        fileNameLabel.textContent = 'No file chosen'; // Reset if no file is selected
+    }
+}
+
+</script>
 
 
 <script>

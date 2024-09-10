@@ -187,11 +187,17 @@ input{
     background: #9199ff;
     color: #fff;
 }
+
+.file-name-label{
+    font-size: 10px;
+}
+
 .clip-box{
     display: flex;
     justify-content: center;
     align-items: center;
     width: 100%;
+    flex-direction: column;
     height: 200px;
     background: #e8e8e8;
     margin-top: 20px;

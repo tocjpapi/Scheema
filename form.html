@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <main>
+        <section class="form-section">
+            <div class="form-container">
+                <form action="" class="clip-form" id="videoForm">
+                    <div class="form-title">Submit Your Clip</div>
+                    <div class="form-description">Your clip will be submitted to Collab Inc, our trusted content licensing partner.</div>
+                    <div class="name-container">
+                        <div class="firstName-container">
+                            <label for="firstName">First Name</label>
+                            <input id="firstName" name="firstName" placeholder="John*">
+                        </div>
+                        <div class="lastName-container">
+                            <label for="lastName">Last Name</label>
+                            <input type="text" id="lastName" name="lastName" placeholder="Doe*">
+                        </div>
+                    </div>
+                    <div class="email-container">
+                        <label for="email-input">Email</label>
+                        <input type="text" id="email-input" name="email" placeholder="example@123.com*">
+                    </div>
+                    <div class="clip-container">
+                        <div class="upload-options">
+                            <div class="option-upload option active-option">
+                                Upload
+                            </div>
+                            <div class="option-paste-link option">
+                                Paste a Link
+                            </div>
+                            <div class="circle-content">OR</div>
+                        </div>
+        
+                        <div class="spacer"></div>
+        
+                        <div class="clip-box">
+                            <div class="clip-box-content">
+                                <span class="file-input-label">Choose a file</span>
+                                <input type="file" id="video" name="videoFile" accept="video/*" class="custom-file-input">
+                            </div>
+                        </div>
+                        <div class="clip-platform invisible">
+                            <label for="clip-platform">Clip Platform:</label>
+                            <select name="clipPlatform">
+                                <option value="" disabled selected hidden> Please select clip platform...</option>
+                                <option value="youtube">YouTube</option>
+                                <option value="instagram">Instagram</option>
+                                <option value="facebook">Facebook</option>
+                                <option value="tiktok">TikTok</option>
+                                <option value="twitter">Twitter</option>
+                            </select>
+                        </div>
+                        <div class="clip-url invisible">
+                            <label for="clip-url">Clip URL:</label>
+                            <input id="clip-url" name="videoLink" placeholder="Clip URL*">
+                        </div>
+                        <h5>Please submit unedited clips without text or music</h5>
+                    </div>
+                    <div class="submit-rules">
+                        <h2>Don't submit clips that:</h2>
+                        <ul class="rules">
+                            <li>Aren't yours</li>
+                            <li>Include music or text</li>
+                            <li>Violate copyright laws</li>
+                            <li>Feature graphic violence or nudity</li>
+                        </ul>
+                    </div>
+                    <div class="clip-info-container">
+                        <div class="filmed-location">
+                            <label for="filmed-location">Where was this filmed?</label>
+                            <input id="filmed-location" name="filmedLocation" placeholder="At Home*">
+                        </div>
+                        <div class="optional-description">
+                            <label>Add clip description? (optional)</label>
+                            <div class="description-options">
+                                <div class="description-option active-option" id="description-option-yes">
+                                    Yes
+                                </div>
+                                <div class="description-option" id="description-option-no">
+                                    No
+                                </div>
+                            </div>
+                            <div class="text-area-container">
+                                <label for="clip-description">Tell us about your clip</label>
+                                <textarea id="clip-description" name="clipDescription" cols="30" rows="10"></textarea>
+                                <div class="textarea-description">A detailed description gives your clip a better chance of being featured</div>
+                            </div>
+                        </div>
+                        <div class="clip-recorder">
+                            <div class="clip-recorder-question">
+                                <h5>Did you record this clip?</h5>
+                            </div>
+                            <div class="description-options" id="clip-recorder-options">
+                                <div class="description-option active-option" id="clip-recorder-yes">
+                                    Yes
+                                </div>
+                                <div class="description-option" id="clip-recorder-no">
+                                    No
+                                </div>
+                            </div>
+                            <div class="clip-recorder-container invisible" id="clip-recorder-input">
+                                <label for="clip-recorder">Who recorded this clip?</label>
+                                <input type="text" id="clip-recorder" name="clipRecorder" placeholder="Myself*">
+                            </div>
+                        </div>
+                        <div class="optional-credit">
+                            <h5>Do you want credit for this clip?</h5>
+                            <div class="description-options credit-options">
+                                <div class="description-option active-option" id="optional-credit-yes">
+                                    Yes
+                                </div>
+                                <div class="description-option" id="optional-credit-no">
+                                    No
+                                </div>
+                            </div>
+                            <div class="credit-info" id="optional-credit-content">
+                                <label for="credit-info-platform">Platform</label>
+                                <select name="creditPlatform">
+                                    <option value="" disabled selected hidden> Please select...</option>
+                                    <option value="youtube">YouTube</option>
+                                    <option value="instagram">Instagram</option>
+                                    <option value="facebook">Facebook</option>
+                                    <option value="tiktok">TikTok</option>
+                                    <option value="twitter">Twitter</option>
+                                    <option value="other">Other</option>
+                                </select>
+                                <label for="credit-info-handle">Handle or Username to credit</label>
+                                <input id="credit-info-handle" name="creditHandle" placeholder="e.g: Mike Tyson">
+                            </div>
+                        </div>
+                        <div class="paypal">
+                            <label for="paypalEmail">PayPal Email</label>
+                            <input type="text" id="paypalEmail" name="paypalEmail" placeholder="example@123.com">
+                            <h4>Featured clips can generate earnings for you</h4>
+                        </div>
+                    </div>
+                    <div class="digital-signature-container">
+                        <h1>Digital Signature</h1>
+                        <div class="canvas-container">
+                            <canvas id="signatureCanvas"></canvas>
+                            <div class="clear" id="clear">Clear</div>
+                        </div>
+                        <p>
+                            I also understand that there is no guarantee of revenue unless my content is commercially licensed to an unaffiliated third party. I have reviewed and agree to the Contest Rules, Content Submission Agreement, Terms of Service, and Privacy Policy.
+                        </p>
+                        <div class="check-boxes">
+                            <div class="check-box"></div>
+                            <h3></h3>
+                        </div>
+                        <div class="check-boxes">
+                            <div class="check-box"></div>
+                            <h3></h3>
+                        </div>
+                        <div class="check-boxes">
+                            <div class="check-box"></div>
+                            <h3></h3>
+                        </div>
+                        <div class="agreements">
+                            <div class="agreement-one agreement">
+                                <input type="radio" name="exclusiveAgreement">
+                                <h5>I have not signed any exclusive agreements for this clip with anyone else</h5>
+                            </div>
+                            <div class="agreement-two agreement">
+                                <input type="radio" name="clipGuidelines">
+                                <h5>My clip meets the <a href="">Clip Guidelines</a> (does not contain nudity, graphic violence, etc...)</h5>
+                            </div>
+                            <div class="agreement-three agreement">
+                                <input type="radio" name="subscribe">
+                                <h5>Keep me in the know about all things about <span>Scheema</span></h5>
+                            </div>
+                        </div>
+                        <button class="submit">Submit</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+        
+
+        
+    </main>
+
+</body>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+<script src="https://unpkg.com/dropbox/dist/Dropbox-sdk.min.js"></script>
+
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+
+        const fileInput = document.getElementById('video');
+        const container = document.querySelector('.clip-box-content');
+
+
+        container.addEventListener('click', function () {
+
+            fileInput.click();
+        });
+    });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
+
+
+
+<script>
+    // Initialize Signature Pad
+    const canvas = document.querySelector('#signatureCanvas');
+    const signaturePad = new SignaturePad(canvas, {
+        backgroundColor: 'rgba(255, 255, 255, 0)',
+        penColor: 'black'
+    });
+
+    // Resize the canvas to fit the container
+    function resizeCanvas() {
+        const ratio = Math.max(window.devicePixelRatio || 1, 1);
+        canvas.width = canvas.offsetWidth * ratio;
+        canvas.height = canvas.offsetHeight * ratio;
+        canvas.getContext('2d').scale(ratio, ratio);
+        signaturePad.clear(); // Clear the canvas to adjust for new size
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas(); // Resize on page load
+
+    // Clear the signature pad
+    document.getElementById('clear').addEventListener('click', function() {
+        signaturePad.clear();
+        document.getElementById('signatureData').value = '';
+    });
+
+
+
+            // Handle Upload / Paste a Link
+            const uploadOptions = document.querySelectorAll('.option');
+            uploadOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    document.querySelectorAll('.option').forEach(opt => opt.classList.remove('active-option'));
+                    this.classList.add('active-option');
+
+                    const isPasteLink = this.classList.contains('option-paste-link');
+                    document.querySelector('.clip-platform').classList.toggle('invisible', !isPasteLink);
+                    document.querySelector('.clip-url').classList.toggle('invisible', !isPasteLink);
+                    document.querySelector('.clip-box').classList.toggle('invisible', isPasteLink);
+                });
+            });
+
+
+</script>
+<script src="scripts.js"></script>
+
+</html>

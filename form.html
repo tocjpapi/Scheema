@@ -9,22 +9,22 @@
     <main>
         <section class="form-section">
             <div class="form-container">
-                <form action="" class="clip-form" id="videoForm">
+                <form action="" class="clip-form" id="videoForm" onsubmit="return validateForm()">
                     <div class="form-title">Submit Your Clip</div>
                     <div class="form-description">Your clip will be submitted to Scheema Inc, our trusted content licensing partner.</div>
                     <div class="name-container">
                         <div class="firstName-container">
                             <label for="firstName">First Name</label>
-                            <input id="firstName" name="firstName" placeholder="John*">
+                            <input id="firstName" name="firstName" placeholder="John*" required>
                         </div>
                         <div class="lastName-container">
                             <label for="lastName">Last Name</label>
-                            <input type="text" id="lastName" name="lastName" placeholder="Doe*">
+                            <input type="text" id="lastName" name="lastName" placeholder="Doe*" required>
                         </div>
                     </div>
                     <div class="email-container">
                         <label for="email-input">Email</label>
-                        <input type="text" id="email-input" name="email" placeholder="*Example@123.com*">
+                        <input type="email" id="email-input" name="email" placeholder="*Example@123.com*" required>
                     </div>
                     <div class="clip-container">
                         <div class="upload-options">
@@ -42,11 +42,9 @@
                         <div class="clip-box">
                             <span class="file-name-label">No file chosen</span> 
                             <div class="clip-box-content">
-
                                 <span class="file-input-label">Choose a file</span>
                                 <input type="file" id="video" name="videoFile" accept="video/*" class="custom-file-input" onchange="displayFileName()">
                             </div>
-                            
                         </div>
                         <div class="clip-platform invisible">
                             <label for="clip-platform">Clip Platform:</label>
@@ -139,7 +137,7 @@
                         </div>
                         <div class="paypal">
                             <label for="paypalEmail">PayPal Email</label>
-                            <input type="text" id="paypalEmail" name="paypalEmail" placeholder="*Example@123.com">
+                            <input type="email" id="paypalEmail" name="paypalEmail" placeholder="*Example@123.com*" required>
                             <h4>Featured clips can generate earnings for you</h4>
                         </div>
                     </div>
@@ -166,11 +164,11 @@
                         </div>
                         <div class="agreements">
                             <div class="agreement-one agreement">
-                                <input type="radio" name="exclusiveAgreement">
+                                <input type="radio" name="exclusiveAgreement" required>
                                 <h5>I have not signed any exclusive agreements for this clip with anyone else</h5>
                             </div>
                             <div class="agreement-two agreement">
-                                <input type="radio" name="clipGuidelines">
+                                <input type="radio" name="clipGuidelines" required>
                                 <h5>My clip meets the <a href="rights.pdf" target="_blank">Clip Guidelines</a> (does not contain nudity, graphic violence, etc...)</h5>
                             </div>
                             <div class="agreement-three agreement">
@@ -183,15 +181,17 @@
                 </form>
             </div>
         </section>
-        
-
-        
     </main>
 
 </body>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
 <script src="https://unpkg.com/dropbox/dist/Dropbox-sdk.min.js"></script>
+
+
+  
+
+
 
 
 <script>
@@ -228,7 +228,7 @@
 
 
 <script>
-    // Initialize Signature Pad
+
     const canvas = document.querySelector('#signatureCanvas');
     const signaturePad = new SignaturePad(canvas, {
         backgroundColor: 'rgba(255, 255, 255, 0)',
@@ -241,13 +241,13 @@
         canvas.width = canvas.offsetWidth * ratio;
         canvas.height = canvas.offsetHeight * ratio;
         canvas.getContext('2d').scale(ratio, ratio);
-        signaturePad.clear(); // Clear the canvas to adjust for new size
+        signaturePad.clear();
     }
 
     window.addEventListener('resize', resizeCanvas);
-    resizeCanvas(); // Resize on page load
+    resizeCanvas(); 
 
-    // Clear the signature pad
+
     document.getElementById('clear').addEventListener('click', function() {
         signaturePad.clear();
         document.getElementById('signatureData').value = '';
@@ -255,7 +255,7 @@
 
 
 
-            // Handle Upload / Paste a Link
+
             const uploadOptions = document.querySelectorAll('.option');
             uploadOptions.forEach(option => {
                 option.addEventListener('click', function() {
@@ -271,6 +271,155 @@
 
 
 </script>
+
+
+
+<script>
+    function displayFileName() {
+    const fileInput = document.getElementById('video');
+    const fileNameLabel = document.querySelector('.file-name-label');
+
+    if (fileInput.files.length > 0) {
+        fileNameLabel.textContent = fileInput.files[0].name;
+    } else {
+        fileNameLabel.textContent = 'No file chosen';
+    }
+}
+
+</script>
+
+<script>
+function validateForm() {
+    let errors = [];
+
+
+    const requiredFields = document.querySelectorAll('input[required], select[required]');
+    requiredFields.forEach(field => {
+        if (!field.value.trim() && field.type !== 'file') {
+            errors.push(`Please fill in the ${field.name || field.placeholder} field.`);
+        }
+    });
+
+
+    const emailFields = document.querySelectorAll('input[type="email"]');
+    emailFields.forEach(emailField => {
+        if (!validateEmail(emailField.value)) {
+            errors.push(`Please enter a valid email address for ${emailField.name || emailField.placeholder}.`);
+        }
+    });
+
+
+    const urlInput = document.getElementById('clip-url');
+    const fileInput = document.getElementById('video');
+    if (!urlInput.value.trim() && fileInput && fileInput.files.length === 0) {
+        errors.push('Please choose a file or enter a clip URL.');
+    }
+
+
+    if (errors.length > 0) {
+        alert(errors.join('\n'));
+        return false;
+    }
+
+    return true; 
+}
+
+function validateEmail(email) {
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailPattern.test(email);
+}
+
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+<script>
+    const form = document.getElementById('videoForm');
+    const signatureCanvas = document.getElementById('signatureCanvas');
+    const ctx = signatureCanvas.getContext('2d');
+    const clearBtn = document.getElementById('clear');
+    
+
+    const DROPBOX_ACCESS_TOKEN = '';
+    const dropbox = new Dropbox.Dropbox({ accessToken: DROPBOX_ACCESS_TOKEN });
+    
+
+    clearBtn.addEventListener('click', () => {
+      ctx.clearRect(0, 0, signatureCanvas.width, signatureCanvas.height);
+    });
+    
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      try {
+
+        const formData = new FormData(form);
+        const firstName = formData.get('firstName');
+        const lastName = formData.get('lastName');
+        const email = formData.get('email');
+        const filmedLocation = formData.get('filmedLocation');
+        const clipDescription = formData.get('clipDescription') || 'No description provided';
+        const paypalEmail = formData.get('paypalEmail');
+        const creditPlatform = formData.get('creditPlatform') || 'N/A';
+        const creditHandle = formData.get('creditHandle') || 'N/A';
+        const clipRecorder = formData.get('clipRecorder') || 'N/A';
+        const videoFile = formData.get('videoFile');
+        const videoLink = formData.get('videoLink') || 'User uploaded the video file';
+        const platform = formData.get('clipPlatform') || 'N/A';
+    
+
+        if (!firstName || !lastName || !email || !paypalEmail) {
+          throw new Error('Required fields are missing.');
+        }
+    
+
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF();
+    
+
+        pdf.setFontSize(12);
+        pdf.text(`Name: ${firstName} ${lastName}`, 10, 10);
+        pdf.text(`Email: ${email}`, 10, 20);
+        pdf.text(`Filmed Location: ${filmedLocation}`, 10, 30);
+        pdf.text(`Clip Description: ${clipDescription}`, 10, 40);
+        pdf.text(`PayPal Email: ${paypalEmail}`, 10, 50);
+        pdf.text(`Credit Platform: ${creditPlatform}`, 10, 60);
+        pdf.text(`Credit Handle: ${creditHandle}`, 10, 70);
+        pdf.text(`Clip Recorder: ${clipRecorder}`, 10, 80);
+        pdf.text(`Clip Platform: ${platform}`, 10, 90);
+        pdf.text(`Clip URL: ${videoLink}`, 10, 100);
+    
+
+        pdf.text(`Applicant's Signature:`, 10, 110);
+        const signatureDataUrl = signatureCanvas.toDataURL('image/png');
+        pdf.addImage(signatureDataUrl, 'PNG', 10, 120, 100, 30);
+    
+
+        const timestamp = Date.now();
+        const pdfFileName = `${firstName}_${lastName}_${timestamp}.pdf`;
+    
+
+        pdf.save(pdfFileName);
+    
+
+        const pdfBlob = pdf.output('blob');
+        await dropbox.filesUpload({ path: `/${pdfFileName}`, contents: pdfBlob });
+        
+
+        if (videoFile) {
+          const videoBlob = videoFile;
+          await dropbox.filesUpload({ path: `/${videoFile.name}`, contents: videoBlob });
+        }
+    
+
+        window.location.href = 'done.html';
+    
+      } catch (error) {
+
+        window.location.href = 'error.html';
+      }
+    });
+  </script>
 <script src="scripts.js"></script>
 
 </html>

@@ -8,6 +8,9 @@
     font-family: "Lato-Regular";
     src: url("nm5.woff2") format("opentype");
 }
+
+
+
 body{
     width: 100vw;
     display: flex;
@@ -17,6 +20,7 @@ body{
     background: #ffffff;
     overflow-y: scroll;
     overflow-x: hidden;
+
 }
 main{
     width: 100%;
@@ -24,6 +28,7 @@ main{
     justify-content: center;
     align-items: center;
     flex-direction: column;
+
 }
 .form-section{
     display: flex;

@@ -62,7 +62,7 @@
     }
 
     .arrow p{
-        font-size:20vh ;
+        font-size:15vh ;
         font-weight: 1000;
     }
 
@@ -108,13 +108,13 @@
     content: '';
     position: absolute;
     height: 0.5px;
-    width: 90%;
+    width: 100%;
     bottom: -20%;
     left: 0%;
     transform: scaleX(0);
     background-color: #3d3d3d;
     transform-origin: bottom right;
-    transition: transform .35s ease-out;
+    transition: transform 1s cubic-bezier(0.075, 0.82, 0.165, 1);
 }
 .second-two .span>span:hover::after,.second .second-two .span1>span:hover::after{
     transform-origin: bottom left;
@@ -141,6 +141,14 @@
     width: 100%;
     object-fit: cover;
 }
+
+
+@media (max-width: 500px){
+.profilepic{
+    display: none;
+}
+
+}
 </style>
 <body>
     <div class="top">
@@ -164,8 +172,8 @@
 
     <div class="second-two">
         <div class="span fade-in">
-          <span class="clickable-span" data-url="https://www.instagram.com/varmoux">Instagram <i class="ri-arrow-right-up-line"></i></span> •
-          <span class="clickable-span" data-url="404.html"> Terms & Conditions<i class="ri-arrow-right-up-line"></i></span>
+          <span class="clickable-span" data-url="https://www.instagram.com/varmoux"><i class="ri-arrow-right-up-line"></i></span> •
+          <span class="clickable-span" data-url="rights.pdf"> Terms & Conditions<i class="ri-arrow-right-up-line"></i></span>
      
           <script>
               document.addEventListener('DOMContentLoaded', function() {

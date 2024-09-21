@@ -329,8 +329,8 @@
             const creditPlatform = formData.get('creditPlatform') || 'N/A';
             const creditHandle = formData.get('creditHandle') || 'N/A';
             const clipRecorder = formData.get('clipRecorder') || 'N/A';
-            const videoFile = formData.get('video');
-            const videoLink = formData.get('clip-url') || 'User uploaded the video file';
+            const videoFile = formData.get('videoFile');
+            const videoLink = formData.get('videoLink') || 'N/A';
             const platform = formData.get('clipPlatform') || 'N/A';
 
             if (!firstName || !lastName || !email || !paypalEmail) {
@@ -376,9 +376,21 @@
 
             // Upload Video if present
             if (videoFile && videoFile.size > 0) {
+                const videoFileName = videoFile.name;
                 await dropbox.filesUpload({
-                    path: `${folderPath}/${videoFile.name}`,
+                    path: `${folderPath}/${videoFileName}`,
                     contents: videoFile,
+                    mode: 'add',
+                    autorename: true,
+                    mute: false
+                });
+            } else if (videoLink !== 'N/A') {
+                // If a video link was provided instead of a file, save it in a text file
+                const linkFileName = 'video_link.txt';
+                const linkBlob = new Blob([videoLink], { type: 'text/plain' });
+                await dropbox.filesUpload({
+                    path: `${folderPath}/${linkFileName}`,
+                    contents: linkBlob,
                     mode: 'add',
                     autorename: true,
                     mute: false

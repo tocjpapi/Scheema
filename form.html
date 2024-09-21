@@ -217,318 +217,234 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-    const fileInput = document.getElementById('video');
-    const fileNameLabel = document.querySelector('.file-name-label');
-
-    function displayFileName() {
-        if (fileInput.files.length > 0) {
-            fileNameLabel.textContent = fileInput.files[0].name;
-        } else {
-            fileNameLabel.textContent = 'No file chosen';
+        const fileInput = document.getElementById('video');
+        const fileNameLabel = document.querySelector('.file-name-label');
+    
+        function displayFileName() {
+            if (fileInput.files.length > 0) {
+                fileNameLabel.textContent = fileInput.files[0].name;
+            } else {
+                fileNameLabel.textContent = 'No file chosen';
+            }
         }
-    }
-
-    fileInput.addEventListener('change', displayFileName);
-
-    const container = document.querySelector('.clip-box-content');
-    container.addEventListener('click', function () {
-        fileInput.click();
-    });
-
-    const canvas = document.querySelector('#signatureCanvas');
-    const signaturePad = new SignaturePad(canvas, {
-        backgroundColor: 'rgba(255, 255, 255, 0)',
-        penColor: 'black'
-    });
-
-    function resizeCanvas() {
-        const ratio = Math.max(window.devicePixelRatio || 1, 1);
-        canvas.width = canvas.offsetWidth * ratio;
-        canvas.height = canvas.offsetHeight * ratio;
-        canvas.getContext('2d').scale(ratio, ratio);
-        signaturePad.clear();
-    }
-
-    window.addEventListener('resize', resizeCanvas);
-    resizeCanvas();
-
-    document.getElementById('clear').addEventListener('click', function() {
-        signaturePad.clear();
-        document.getElementById('signatureData').value = '';
-    });
-
-    const uploadOptions = document.querySelectorAll('.option');
-    uploadOptions.forEach(option => {
-        option.addEventListener('click', function() {
-            document.querySelectorAll('.option').forEach(opt => opt.classList.remove('active-option'));
-            this.classList.add('active-option');
-
-            const isPasteLink = this.classList.contains('option-paste-link');
-            document.querySelector('.clip-platform').classList.toggle('invisible', !isPasteLink);
-            document.querySelector('.clip-url').classList.toggle('invisible', !isPasteLink);
-            document.querySelector('.clip-box').classList.toggle('invisible', isPasteLink);
+    
+        fileInput.addEventListener('change', displayFileName);
+    
+        const container = document.querySelector('.clip-box-content');
+        container.addEventListener('click', function () {
+            fileInput.click();
+        });
+    
+        const canvas = document.querySelector('#signatureCanvas');
+        const signaturePad = new SignaturePad(canvas, {
+            backgroundColor: 'rgba(255, 255, 255, 0)',
+            penColor: 'black'
+        });
+    
+        function resizeCanvas() {
+            const ratio = Math.max(window.devicePixelRatio || 1, 1);
+            canvas.width = canvas.offsetWidth * ratio;
+            canvas.height = canvas.offsetHeight * ratio;
+            canvas.getContext('2d').scale(ratio, ratio);
+            signaturePad.clear();
+        }
+    
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+    
+        document.getElementById('clear').addEventListener('click', function() {
+            signaturePad.clear();
+            document.getElementById('signatureData').value = '';
+        });
+    
+        const uploadOptions = document.querySelectorAll('.option');
+        uploadOptions.forEach(option => {
+            option.addEventListener('click', function() {
+                document.querySelectorAll('.option').forEach(opt => opt.classList.remove('active-option'));
+                this.classList.add('active-option');
+    
+                const isPasteLink = this.classList.contains('option-paste-link');
+                document.querySelector('.clip-platform').classList.toggle('invisible', !isPasteLink);
+                document.querySelector('.clip-url').classList.toggle('invisible', !isPasteLink);
+                document.querySelector('.clip-box').classList.toggle('invisible', isPasteLink);
+            });
+        });
+    
+        // OAuth 2.0 Dropbox setup
+        const DROPBOX_CLIENT_ID = 'ekpf8o9wpkutry2'; 
+        const DROPBOX_REDIRECT_URI = 'https://tocjpapi.github.io/Scheema/form.html';
+    
+        // Initialize Dropbox authentication
+        const dbxAuth = new Dropbox.DropboxAuth({
+            clientId: DROPBOX_CLIENT_ID
+        });
+    
+        // Function to start OAuth 2.0 flow
+        function authenticateWithDropbox() {
+            dbxAuth.getAuthenticationUrl(DROPBOX_REDIRECT_URI)
+                .then((authUrl) => {
+                    window.location.href = authUrl;
+                })
+                .catch((error) => {
+                    console.error('Error initiating Dropbox authentication:', error);
+                });
+        }
+    
+        // Check if redirected back with an access token
+        const urlParams = new URLSearchParams(window.location.hash.replace('#', '?'));
+        const accessToken = urlParams.get('access_token');
+        
+        let dropbox;
+    
+        if (accessToken) {
+            dropbox = new Dropbox.Dropbox({ accessToken });
+        } else {
+            authenticateWithDropbox();
+        }
+    
+        const form = document.getElementById('videoForm');
+    
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+    
+            try {
+                if (!validateForm()) {
+                    return;
+                }
+    
+                document.querySelector('.loader').style.display = 'flex';
+    
+                const formData = new FormData(form);
+                const firstName = formData.get('firstName');
+                const lastName = formData.get('lastName');
+                const email = formData.get('email');
+                const filmedLocation = formData.get('filmedLocation');
+                const clipDescription = formData.get('clipDescription') || 'No description provided';
+                const paypalEmail = formData.get('paypalEmail');
+                const creditPlatform = formData.get('creditPlatform') || 'N/A';
+                const creditHandle = formData.get('creditHandle') || 'N/A';
+                const clipRecorder = formData.get('clipRecorder') || 'N/A';
+                const videoFile = formData.get('videoFile');
+                const videoLink = formData.get('videoLink') || 'N/A';
+                const platform = formData.get('clipPlatform') || 'N/A';
+    
+                if (!firstName || !lastName || !email || !paypalEmail) {
+                    throw new Error('Required fields are missing.');
+                }
+    
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF();
+    
+                pdf.setFontSize(12);
+    
+                const textLines = [
+                    `Name: ${firstName} ${lastName}`,
+                    `Email: ${email}`,
+                    `Filmed Location: ${filmedLocation}`,
+                    `Clip Description: ${clipDescription}`,
+                    `PayPal Email: ${paypalEmail}`,
+                    `Credit Platform: ${creditPlatform}`,
+                    `Credit Handle: ${creditHandle}`,
+                    `Clip Recorder: ${clipRecorder}`,
+                    `Clip Platform: ${platform}`,
+                    `Clip URL: ${videoLink}`
+                ];
+    
+                const margin = { top: 10, left: 10, right: 10 };
+                let y = margin.top;
+                const pageHeight = pdf.internal.pageSize.height;
+    
+                textLines.forEach((line) => {
+                    const textWidth = pdf.getStringUnitWidth(line) * pdf.internal.getFontSize() / pdf.internal.scaleFactor;
+                    const pageWidth = pdf.internal.pageSize.width - margin.left - margin.right;
+    
+                    // Split long lines if necessary
+                    if (textWidth > pageWidth) {
+                        const splitLines = pdf.splitTextToSize(line, pageWidth);
+                        splitLines.forEach(splitLine => {
+                            if (y + 10 > pageHeight) {
+                                pdf.addPage();
+                                y = margin.top;
+                            }
+                            pdf.text(splitLine, margin.left, y);
+                            y += 10; // Increment for the next line
+                        });
+                    } else {
+                        if (y + 10 > pageHeight) {
+                            pdf.addPage();
+                            y = margin.top;
+                        }
+                        pdf.text(line, margin.left, y);
+                        y += 10;
+                    }
+                });
+    
+                pdf.text(`Applicant's Signature:`, margin.left, y);
+                const signatureDataUrl = canvas.toDataURL('image/png');
+                y += 10;
+                pdf.addImage(signatureDataUrl, 'PNG', margin.left, y, 100, 30);
+    
+                const timestamp = Date.now();
+                const folderPath = `/submission_${timestamp}`;
+                const pdfFileName = `${firstName}_${lastName}_${timestamp}.pdf`;
+    
+                const pdfBlob = pdf.output('blob');
+    
+                await dropbox.filesCreateFolderV2({ path: folderPath });
+    
+                await dropbox.filesUpload({
+                    path: `${folderPath}/${pdfFileName}`,
+                    contents: pdfBlob,
+                    mode: 'add',
+                    autorename: true,
+                    mute: false
+                });
+    
+                if (videoFile && videoFile.size > 0) {
+                    await dropbox.filesUpload({
+                        path: `${folderPath}/${videoFile.name}`,
+                        contents: videoFile,
+                        mode: 'add',
+                        autorename: true,
+                        mute: false
+                    });
+                } else if (videoLink !== 'N/A') {
+                    const linkFileName = 'video_link.txt';
+                    const linkBlob = new Blob([videoLink], { type: 'text/plain' });
+                    await dropbox.filesUpload({
+                        path: `${folderPath}/${linkFileName}`,
+                        contents: linkBlob,
+                        mode: 'add',
+                        autorename: true,
+                        mute: false
+                    });
+                }
+    
+                document.querySelector('.loader').style.display = 'none';
+                window.location.href = 'done.html';
+    
+            } catch (error) {
+                console.error('Form submission error:', error);
+                alert('An error occurred during form submission. Please try again.');
+                document.querySelector('.loader').style.display = 'none';
+            }
         });
     });
-
-    // OAuth 2.0 Dropbox setup
-    const DROPBOX_CLIENT_ID = 'ekpf8o9wpkutry2'; 
-    const DROPBOX_REDIRECT_URI = 'https://tocjpapi.github.io/Scheema/form.html';
-
-    // Initialize Dropbox authentication
-    const dbxAuth = new Dropbox.DropboxAuth({
-        clientId: DROPBOX_CLIENT_ID
-    });
-
-    // Function to start OAuth 2.0 flow
-    function authenticateWithDropbox() {
-        dbxAuth.getAuthenticationUrl(DROPBOX_REDIRECT_URI)
-            .then((authUrl) => {
-                // Redirect the user to the Dropbox OAuth page
-                window.location.href = authUrl;
-            })
-            .catch((error) => {
-                console.error('Error initiating Dropbox authentication:', error);
-            });
-    }
-
-    // Check if redirected back with an access token
-    const urlParams = new URLSearchParams(window.location.hash.replace('#', '?'));
-    const accessToken = urlParams.get('access_token');
     
-    let dropbox;
-
-    if (accessToken) {
-        // OAuth token found, create Dropbox instance with it
-        dropbox = new Dropbox.Dropbox({ accessToken });
-    } else {
-        // If no token, direct the user to authenticate with Dropbox
-        authenticateWithDropbox();
+    function validateForm() {
+        // Validation logic remains the same as before
+        let errors = [];
+        // Validate required fields, email, and either video file or URL
+        // Return errors and alert the user if necessary
+        return true;
     }
-
-    // Submit form and upload files to Dropbox
-    const form = document.getElementById('videoForm');
-
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        try {
-            if (!validateForm()) {
-                return;
-            }
-
-            // Show loader
-            document.querySelector('.loader').style.display = 'flex';
-
-            const formData = new FormData(form);
-            const firstName = formData.get('firstName');
-            const lastName = formData.get('lastName');
-            const email = formData.get('email');
-            const filmedLocation = formData.get('filmedLocation');
-            const clipDescription = formData.get('clipDescription') || 'No description provided';
-            const paypalEmail = formData.get('paypalEmail');
-            const creditPlatform = formData.get('creditPlatform') || 'N/A';
-            const creditHandle = formData.get('creditHandle') || 'N/A';
-            const clipRecorder = formData.get('clipRecorder') || 'N/A';
-            const videoFile = formData.get('videoFile');
-            const videoLink = formData.get('videoLink') || 'N/A';
-            const platform = formData.get('clipPlatform') || 'N/A';
-
-            if (!firstName || !lastName || !email || !paypalEmail) {
-                throw new Error('Required fields are missing.');
-            }
-
-            const { jsPDF } = window.jspdf;
-            const pdf = new jsPDF();
-
-            
-
-            pdf.setFontSize(12);
-
-pdf.text("CONTENT LICENSING AGREEMENT", 10, 10);
-
-
-pdf.text("You and We agree:", 10, 20);
-pdf.text("This binding contract is referred to as “Agreement,” or “Contract.” You have read and understand and agree to all of it.", 10, 30);
-pdf.text("You are at least 18 years of age. If You are under the age of 18 or under a conservatorship or guardianship where You", 10, 40);
-pdf.text("can’t agree to contracts Your parent or legal guardian or conservator must ratify, consent to Your entering into the", 10, 50);
-pdf.text("Agreement, or co-sign and enter into the Agreement, and each amendment, themselves, and on Your behalf. If You are", 10, 60);
-pdf.text("submitting Content on behalf of any entity You represent and warrant that You have the authority to bind such entity to", 10, 70);
-pdf.text("the Agreement.", 10, 80);
-pdf.text("“Content” includes all forms of copyrightable works, including video, audiovisual works and recordings, sound", 10, 90);
-pdf.text("recordings and music, musical compositions including lyrics, photographs (including bursts), drawings, graphics,", 10, 100);
-pdf.text("artwork, literary material, writings (including electronic, texts, snaps, etc.), designs, inventions, ideas, concepts, pitches,", 10, 110);
-pdf.text("and other intellectual property rights thereto, as well as all original materials created by You which are incorporated", 10, 120);
-pdf.text("therein, also including, character characterizations, Your and/or other persons’ names, likenesses, voices, usernames,", 10, 130);
-pdf.text("profiles, actions, appearances, performances and/or other biographical information or material, and/or other similar", 10, 140);
-pdf.text("materials that are submitted, posted, uploaded, displayed, distributed, communicated to us, or otherwise provided to us.", 10, 150);
-pdf.text("“Submit,” or “Submitted” to us has a plain English meaning of Your having given, uploaded, or otherwise provided to Us.", 10, 160);
-pdf.text("You warrant and represent that except as set forth herein (a)You will not submit or grant, and have not submitted or", 10, 170);
-pdf.text("granted, any rights in or to the Content to any third party, including any multi-channel network, or individual, or", 10, 180);
-pdf.text("entity, that uses any social media sites, except directly to social media sites (e.g., YouTube, Facebook, Instagram, etc.)", 10, 190);
-pdf.text("under your own account or channel for the sole purpose of posting on such social media site with no other rights in the", 10, 200);
-pdf.text("Content granted to such site, subject to Collab Clips’s rights to claim, monetize, remove, or to have removed, the", 10, 210);
-pdf.text("Content: (b) (1) a) immediately prior to entering into this Agreement whereby You grant an exclusive license in the", 10, 220);
-pdf.text("Content to Collab Clips, You were the sole and exclusive owner of the Content and all rights therein that You submit, b)", 10, 230);
-pdf.text("You have the full right and authority to enter into this Agreement and to grant all rights granted herein and c) You agree", 10, 240);
-pdf.text("not take any action to impair the rights You are granting and have granted herein; (2) the use, making, exhibition,", 10, 250);
-pdf.text("distribution and/or other exploitation of the Content does not violate or infringe the rights of others or constitute a", 10, 260);
-pdf.text("defamation or invasion of their privacy or right of publicity; (3) You have not falsely identified any individual involved in the", 10, 270);
-pdf.text("authoring or making of the Content or any individual or entity whose appearance or voice is incorporated in the Content;", 10, 280);
-pdf.text("(4) You have obtained all necessary consents and permissions required for Collab Clips to fully exploit the Content,", 10, 290);
-pdf.text("including the rights described and granted herein; (5) the Content and its use by Collab Clips does not fall under the", 10, 300);
-pdf.text("jurisdiction of any guild or union (for example, Director’s Guild, SAG-AFTRA, Writers Guild, etc.); (6) The Content", 10, 310);
-pdf.text("conforms to the requirements of this Agreement.", 10, 320);
-pdf.text("YOUR OWNERSHIP RIGHTS: Subject to the grant of rights to Collab Clips in this Agreement, as between You and", 10, 330);
-pdf.text("Collab Clips, You otherwise own and retain all rights in the Content. Without limiting the foregoing, You retain the rights", 10, 340);
-pdf.text("to utilize the Content solely for non-transferable, non-commercial, revocable, personal use license in the Content for the", 10, 350);
-pdf.text("purpose of your personal use, including using the Content on Your personal social networking account(s) online and in", 10, 360);
-pdf.text("social media sites (e.g., YouTube, Instagram, and Facebook) for the sole purpose of posting on such social media site", 10, 370);
-pdf.text("with no other rights in the Content granted to you or such site, subject to Collab Clips’s rights to claim, monetize,", 10, 380);
-pdf.text("remove, or to have removed, the Content. You may not license, sell, transfer, or otherwise commercialize or monetize the", 10, 390);
-pdf.text("Content with any third-party, including exhibiting and/or distributing the Content except as described in this paragraph.", 10, 400);
-pdf.text("PERPETUAL ROYALTY-FREE, EXCLUSIVE UNIVERSE-WIDE TRANSFER, GRANT AND ASSIGNMENT OF", 10, 410);
-pdf.text("COPYRIGHT: By submitting Content to Us, and by doing so, or otherwise, entering into this Agreement and agreeing,", 10, 420);
-pdf.text("You irrevocably grant a PERPETUAL, ROYALTY FREE, EXCLUSIVE, UNIVERSE-WIDE license in and to all rights in", 10, 430);
-pdf.text("relation to the Content to Collab, Inc. (“Collab”), d/b/a Collab Clips (“Collab Clips”), except for such rights therein", 10, 440);
-pdf.text("retained by You pursuant to Paragraph 6 above. Each such license irrevocably grants Collab Clips (for any and all uses", 10, 450);
-pdf.text("at all) the sole and exclusive universe-wide right, title and interest, in and to the Content on a fully-paid, royalty-free,", 10, 460);
-pdf.text("licensable and transferable (in whole or part) basis, including, without limitation, in and to the Content and all elements,", 10, 470);
-pdf.text("including to exhibit, comment on, modify, create derivative works in Collab Clips’s sole and unfettered discretion, in, on,", 10, 480);
-pdf.text("and via all methods, and means, now known or hereafter devised or invented for any and all purposes, without further", 10, 490);
-pdf.text("notice to You without the expectation or requirement of any (additional) permission from or payment to You (except as", 10, 500);
-pdf.text("expressly provided by Paragraph 12 below) or to any other person or entity. Except as expressly permitted by Paragraph", 10, 510);
-pdf.text("6 above, You may not and will not make, license, or allow any use of any portion of the Content.If required, You will", 10, 520);
-pdf.text("execute additional documents to give effect to the license grant to, and vesting of such license in, Collab Clips of the", 10, 530);
-pdf.text("Content and all other rights therein or in connection therewith. If Collab Clips is unable, for any reason, to secure Your", 10, 540);
-pdf.text("signature to memorialize the grant, transfer, or assignment of any rights in and to any Content or rights granted under this", 10, 550);
-pdf.text("Agreement, You hereby irrevocably designate and appoint Collab Clips and Collab Clips’s duly authorized officers and", 10, 560);
-pdf.text("agents as Your agents and attorneys-in-fact to act for and on Your behalf and instead of You to take all lawfully", 10, 570);
-pdf.text("permitted acts in furtherance thereto and to enforce its rights under and to such Content and all other rights, all with the", 10, 580);
-pdf.text("same legal force and effect as if executed by You. The foregoing is deemed a power coupled with an interest and is", 10, 590);
-pdf.text("irrevocable. As a part of the exercise of rights granted to Collab Clips under this Agreement, You also give Us the right to", 10, 600);
-pdf.text("use Your real and professional name, screen name, or nom de guere, voice, likeness (picture or video), biographical", 10, 610);
-pdf.text("information, to the extent reasonably necessary to exercise the rights granted hereunder. If Collab Clips utilizes any", 10, 620);
-pdf.text("social media handles that have been submitted, in any Content, You acknowledge that Collab Clips may use Your social", 10, 630);
-pdf.text("media handles in conjunction with the Content.", 10, 640);
-pdf.text("RIGHT TO INSPECT, EXAMINE, AND REMOVE: Collab Clips shall have the right to review the Content and the right", 10, 650);
-pdf.text("to approve the Content before, during, and after production; and Collab Clips may remove any Content from You", 10, 660);
-pdf.text("or from its site and/or other properties, at its sole discretion, at any time and without notice. You will not receive", 10, 670);
-pdf.text("any compensation from Collab Clips for such removal. You acknowledge that You are not entitled to any fees for the Content", 10, 680);
-pdf.text("and that there is no expectation or promise of payment, including royalties, for the Content or for the rights granted.", 10, 690);
-pdf.text("RIGHT TO MONETIZE: You acknowledge that all Content that You provide to Collab Clips is subject to Monetization.", 10, 700);
-pdf.text("You acknowledge that Collab Clips may monetize Content by selling advertising on the Content and/or by using the Content", 10, 710);
-pdf.text("as part of promotional materials, and that You will not receive any compensation for such use and monetization, except as", 10, 720);
-pdf.text("specifically set forth in this Agreement. If You are entitled to any compensation, it will be set forth in writing in a", 10, 730);
-pdf.text("separate agreement. Collab Clips is not required to seek Your permission to monetize the Content and may do so", 10, 740);
-pdf.text("in perpetuity. You hereby waive any and all claims for payment from Collab Clips, including without limitation, any claims", 10, 750);
-pdf.text("for royalties and all other claims for compensation relating to the use of the Content by Collab Clips, now or in the", 10, 760);
-pdf.text("future, including for use on social media platforms, as that is the nature of the business model. The revenues generated", 10, 770);
-pdf.text("through the monetization of the Content will be subject to Collab Clips’s complete discretion, including the determination", 10, 780);
-pdf.text("of what constitutes revenue and how much will be earned by Collab Clips through the use of the Content, including from", 10, 790);
-pdf.text("third-party advertisers, sponsors, or others.", 10, 800);
-pdf.text("INDEMNIFICATION: You agree to indemnify, defend and hold harmless Collab Clips and Collab, Inc., their parent", 10, 810);
-pdf.text("companies, subsidiaries, affiliates, and each of their respective officers, directors, shareholders, employees, agents,", 10, 820);
-pdf.text("and representatives from and against any and all claims, damages, liabilities, judgments, losses, costs or expenses,", 10, 830);
-pdf.text("including reasonable attorneys’ fees and costs, arising from or in connection with (a) any breach of this Agreement,", 10, 840);
-pdf.text("or (b) any act or omission by You in connection with the Content, or any third-party claim relating to the Content.", 10, 850);
-pdf.text("FORCE MAJEURE: Collab Clips shall not be liable for any delay or failure to perform its obligations hereunder if such delay", 10, 860);
-pdf.text("is due to causes beyond its reasonable control, including but not limited to acts of God, fires, floods, wars, strikes,", 10, 870);
-pdf.text("embargoes, acts of civil or military authorities, terrorism, or other circumstances beyond Collab Clips’s reasonable control.", 10, 880);
-pdf.text("CHOICE OF LAW AND FORUM: This Agreement shall be governed by and construed in accordance with the laws of the State of", 10, 890);
-pdf.text("California, without regard to its conflicts of laws principles. You and Collab Clips agree that any dispute arising out of or", 10, 900);
-pdf.text("related to this Agreement shall be brought in the state or federal courts located in Los Angeles County, California,", 10, 910);
-pdf.text("and You irrevocably consent to the jurisdiction of such courts. If any provision of this Agreement is found to be invalid or", 10, 920);
-pdf.text("unenforceable, the remaining provisions shall remain in full force and effect. This Agreement constitutes the entire agreement", 10, 930);
-pdf.text("between You and Collab Clips and supersedes all prior agreements, understandings, and representations, whether oral or written.", 10, 940);
-pdf.text("No waiver of any provision of this Agreement shall be deemed a waiver of any other provision, and no waiver shall be effective", 10, 950);
-pdf.text("unless in writing and signed by both parties.", 10, 960);
-pdf.text("I HAVE READ THIS AGREEMENT, UNDERSTAND IT, AND AGREE TO BE BOUND BY ITS TERMS.", 10, 970);
-pdf.text("ACCEPTED AND AGREED:", 10, 980);
-
-
-            pdf.text(`Name: ${firstName} ${lastName}`, 10, 990);
-            pdf.text(`Email: ${email}`, 10, 1000);
-            pdf.text(`Filmed Location: ${filmedLocation}`, 10, 1010);
-            pdf.text(`Clip Description: ${clipDescription}`, 10, 1020);
-            pdf.text(`PayPal Email: ${paypalEmail}`, 10, 1030);
-            pdf.text(`Credit Platform: ${creditPlatform}`, 10, 1040);
-            pdf.text(`Credit Handle: ${creditHandle}`, 10, 1050);
-            pdf.text(`Clip Recorder: ${clipRecorder}`, 10, 1060);
-            pdf.text(`Clip Platform: ${platform}`, 10, 1070);
-            pdf.text(`Clip URL: ${videoLink}`, 10, 1080);
-
-            pdf.text(`Applicant's Signature:`, 10, 1090);
-            const signatureDataUrl = canvas.toDataURL('image/png');
-            pdf.addImage(signatureDataUrl, 'PNG', 10, 1100, 100, 30);
-
-            const timestamp = Date.now();
-            const folderPath = `/submission_${timestamp}`;
-            const pdfFileName = `${firstName}_${lastName}_${timestamp}.pdf`;
-
-            const pdfBlob = pdf.output('blob');
-
-            // Create folder and upload to Dropbox
-            await dropbox.filesCreateFolderV2({ path: folderPath });
-
-            // Upload PDF to Dropbox
-            await dropbox.filesUpload({
-                path: `${folderPath}/${pdfFileName}`,
-                contents: pdfBlob,
-                mode: 'add',
-                autorename: true,
-                mute: false
-            });
-
-            // Upload Video if present
-            if (videoFile && videoFile.size > 0) {
-                const videoFileName = videoFile.name;
-                await dropbox.filesUpload({
-                    path: `${folderPath}/${videoFileName}`,
-                    contents: videoFile,
-                    mode: 'add',
-                    autorename: true,
-                    mute: false
-                });
-            } else if (videoLink !== 'N/A') {
-                // If a video link was provided instead of a file, save it in a text file
-                const linkFileName = 'video_link.txt';
-                const linkBlob = new Blob([videoLink], { type: 'text/plain' });
-                await dropbox.filesUpload({
-                    path: `${folderPath}/${linkFileName}`,
-                    contents: linkBlob,
-                    mode: 'add',
-                    autorename: true,
-                    mute: false
-                });
-            }
-
-            // Hide loader
-            document.querySelector('.loader').style.display = 'none';
-
-            window.location.href = 'done.html';
-
-        } catch (error) {
-            console.error('Form submission error:', error);
-            alert('An error occurred during form submission. Please try again.');
-            // Hide loader in case of error
-            document.querySelector('.loader').style.display = 'none';
-        }
-    });
-});
-
-function validateForm() {
-    // Validation logic remains the same as before
-    let errors = [];
-    // Validate required fields, email, and either video file or URL
-    // Return errors and alert the user if necessary
-    return true;
-}
-
-function validateEmail(email) {
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailPattern.test(email);
-}
-</script>
+    
+    function validateEmail(email) {
+        const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailPattern.test(email);
+    }
+    </script>
+    
 
 
 

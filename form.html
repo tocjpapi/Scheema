@@ -217,7 +217,6 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        // File input handling
         const fileInput = document.getElementById('video');
         const fileNameLabel = document.querySelector('.file-name-label');
 
@@ -231,328 +230,199 @@
 
         fileInput.addEventListener('change', displayFileName);
 
-        const container = document.querySelector('.clip-box-content');
-        container.addEventListener('click', function () {
-            fileInput.click();
-        });
 
-        // Signature pad setup
-        const canvas = document.querySelector('#signatureCanvas');
-        const signaturePad = new SignaturePad(canvas, {
-            backgroundColor: 'rgba(255, 255, 255, 0)',
-            penColor: 'black'
-        });
+        const DROPBOX_CLIENT_ID = 'ekpf8o9wpkutry2'; 
+        const DROPBOX_REDIRECT_URI = 'https://tocjpapi.github.io/Scheema/form.html/auth';
 
-        function resizeCanvas() {
-            const ratio = Math.max(window.devicePixelRatio || 1, 1);
-            canvas.width = canvas.offsetWidth * ratio;
-            canvas.height = canvas.offsetHeight * ratio;
-            canvas.getContext('2d').scale(ratio, ratio);
-            signaturePad.clear();
-        }
-
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
-
-        document.getElementById('clear').addEventListener('click', function () {
-            signaturePad.clear();
-            document.getElementById('signatureData').value = '';
-        });
-
-        // Upload options handling
-        const uploadOptions = document.querySelectorAll('.option');
-        uploadOptions.forEach(option => {
-            option.addEventListener('click', function () {
-                document.querySelectorAll('.option').forEach(opt => opt.classList.remove('active-option'));
-                this.classList.add('active-option');
-
-                const isPasteLink = this.classList.contains('option-paste-link');
-                document.querySelector('.clip-platform').classList.toggle('invisible', !isPasteLink);
-                document.querySelector('.clip-url').classList.toggle('invisible', !isPasteLink);
-                document.querySelector('.clip-box').classList.toggle('invisible', isPasteLink);
-            });
-        });
-
-        // OAuth 2.0 Dropbox setup
-        const DROPBOX_CLIENT_ID = 'ekpf8o9wpkutry2';  
-        const DROPBOX_CLIENT_SECRET = 'srt05sy5qy36zxg'; 
-        const DROPBOX_REDIRECT_URI = 'https://tocjpapi.github.io/Scheema/form.html';
-        const DROPBOX_AUTH_URL = 'https://www.dropbox.com/oauth2/authorize';
-        const DROPBOX_TOKEN_URL = 'https://api.dropboxapi.com/oauth2/token';
-
-        // Function to start OAuth 2.0 flow
         function authenticateWithDropbox() {
-            const state = generateRandomState();
-            localStorage.setItem('dropboxOAuthState', state);
-
-            const authUrl = new URL(DROPBOX_AUTH_URL);
-            authUrl.searchParams.append('client_id', DROPBOX_CLIENT_ID);
-            authUrl.searchParams.append('response_type', 'code');
-            authUrl.searchParams.append('redirect_uri', DROPBOX_REDIRECT_URI);
-            authUrl.searchParams.append('state', state);
-
-            window.location.href = authUrl.toString();
+            const authUrl = `https://www.dropbox.com/oauth2/authorize?client_id=${DROPBOX_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(DROPBOX_REDIRECT_URI)}`;
+            window.location.href = authUrl;
         }
 
-        // Function to exchange code for token
-        async function getAccessToken(code) {
-            const body = new URLSearchParams();
-            body.append('code', code);
-            body.append('grant_type', 'authorization_code');
-            body.append('client_id', DROPBOX_CLIENT_ID);
-            body.append('client_secret', DROPBOX_CLIENT_SECRET); // Add your secret here
-            body.append('redirect_uri', DROPBOX_REDIRECT_URI);
-
-            const response = await fetch(DROPBOX_TOKEN_URL, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                },
-                body: body
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to get access token');
-            }
-
-            const data = await response.json();
-            return data.access_token;
-        }
-
-        // Function to generate random state
-        function generateRandomState() {
-            return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-        }
-
-        let dropbox;
-
-        // Check for authorization code in URL
+        // Check if redirected back with an authorization code
         const urlParams = new URLSearchParams(window.location.search);
         const authCode = urlParams.get('code');
-        const state = urlParams.get('state');
 
-        if (authCode && state) {
-            const storedState = localStorage.getItem('dropboxOAuthState');
-            if (state !== storedState) {
-                console.error('State mismatch. Possible CSRF attack.');
-                return;
-            }
+        if (authCode) {
+            // Exchange the authorization code for an access token
+            fetch('https://api.dropboxapi.com/oauth2/token', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    code: authCode,
+                    grant_type: 'authorization_code',
+                    client_id: DROPBOX_CLIENT_ID,
+                    client_secret: 'srt05sy5qy36zxg', 
+                    redirect_uri: DROPBOX_REDIRECT_URI,
+                }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.access_token) {
+                    const accessToken = data.access_token;
 
-            getAccessToken(authCode)
-                .then(accessToken => {
-                    localStorage.setItem('dropboxAccessToken', accessToken);
-                    dropbox = new Dropbox.Dropbox({ accessToken });
-                })
-                .catch(error => {
-                    console.error('Error getting access token:', error);
-                });
-        } else if (!localStorage.getItem('dropboxAccessToken')) {
-            // If no token, direct the user to authenticate with Dropbox
-            authenticateWithDropbox();
-        } else {
-            // Use existing access token
-            const accessToken = localStorage.getItem('dropboxAccessToken');
-            dropbox = new Dropbox.Dropbox({ accessToken });
-        }
+                    // Submit form and upload files to Dropbox
+                    const form = document.getElementById('videoForm');
 
-        // Form submission and file upload
-        const form = document.getElementById('videoForm');
+                    form.addEventListener('submit', async (e) => {
+                        e.preventDefault();
 
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
+                        try {
+                            // Show loader
+                            document.querySelector('.loader').style.display = 'flex';
 
-            try {
-                if (!validateForm()) {
-                    return;
-                }
+                            const formData = new FormData(form);
+                            const firstName = formData.get('firstName');
+                            const lastName = formData.get('lastName');
+                            const email = formData.get('email');
+                            const filmedLocation = formData.get('filmedLocation');
+                            const clipDescription = formData.get('clipDescription') || 'No description provided';
+                            const paypalEmail = formData.get('paypalEmail');
+                            const creditPlatform = formData.get('creditPlatform') || 'N/A';
+                            const creditHandle = formData.get('creditHandle') || 'N/A';
+                            const clipRecorder = formData.get('clipRecorder') || 'N/A';
+                            const videoFile = formData.get('video') || null; // Get video file
+                            const videoLink = formData.get('videoLink') || 'N/A';
 
-                // Show loader
-                document.querySelector('.loader').style.display = 'flex';
+                            if (!firstName || !lastName || !email || !paypalEmail) {
+                                throw new Error('Required fields are missing.');
+                            }
 
-                const formData = new FormData(form);
-                const firstName = formData.get('firstName');
-                const lastName = formData.get('lastName');
-                const email = formData.get('email');
-                const filmedLocation = formData.get('filmedLocation');
-                const clipDescription = formData.get('clipDescription') || 'No description provided';
-                const paypalEmail = formData.get('paypalEmail');
-                const creditPlatform = formData.get('creditPlatform') || 'N/A';
-                const creditHandle = formData.get('creditHandle') || 'N/A';
-                const clipRecorder = formData.get('clipRecorder') || 'N/A';
-                const videoFile = formData.get('videoFile');
-                const videoLink = formData.get('videoLink') || 'N/A';
-                const platform = formData.get('clipPlatform') || 'N/A';
+                            const { jsPDF } = window.jspdf;
+                            const pdf = new jsPDF();
 
-                if (!firstName || !lastName || !email || !paypalEmail) {
-                    throw new Error('Required fields are missing.');
-                }
+                            // Set margins and page size
+                            const margin = 20;
+                            const pageWidth = pdf.internal.pageSize.width;
+                            const pageHeight = pdf.internal.pageSize.height;
+                            const maxWidth = pageWidth - 2 * margin;
 
-                const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF();
+                            pdf.setFontSize(12);
 
-                // Set margins and page size
-                const margin = 20;
-                const pageWidth = pdf.internal.pageSize.width;
-                const pageHeight = pdf.internal.pageSize.height;
-                const maxWidth = pageWidth - 2 * margin;
+                            const licenseText = `Your License Information Here`;
 
-                pdf.setFontSize(12);
+                            const textLines = [
+                                licenseText,
+                                `Name: ${firstName} ${lastName}`,
+                                `Email: ${email}`,
+                                `Filmed Location: ${filmedLocation}`,
+                                `Clip Description: ${clipDescription}`,
+                                `PayPal Email: ${paypalEmail}`,
+                                `Credit Platform: ${creditPlatform}`,
+                                `Credit Handle: ${creditHandle}`,
+                                `Clip Recorder: ${clipRecorder}`,
+                                `Clip URL: ${videoLink}`
+                            ];
 
-                const licenseText = `CONTENT LICENSING AGREEMENT
+                            let yPosition = margin;
 
-This Content Licensing Agreement ("Agreement") is a binding contract between you ("Content Creator" or "You") and Scheema ("Company," "We," "Us," or "Our"). By submitting Content to Scheema, You agree to be bound by the terms and conditions set forth in this Agreement.
+                            textLines.forEach((line) => {
+                                const lines = pdf.splitTextToSize(line, maxWidth);
+                                lines.forEach(splitLine => {
+                                    if (yPosition > pageHeight - margin) {
+                                        pdf.addPage();
+                                        yPosition = margin;
+                                    }
+                                    pdf.text(splitLine, margin, yPosition);
+                                    yPosition += 7; // Approximate line height
+                                });
+                                yPosition += 5; // Extra space between lines
+                            });
 
-1. Definitions
+                            // Add signature placeholder (if you have a signature canvas)
+                            const signatureDataUrl = document.getElementById('signatureCanvas').toDataURL('image/png');
+                            pdf.addImage(signatureDataUrl, 'PNG', margin, yPosition, 100, 30);
 
-1.1. "Content" refers to any form of work created by You and submitted to Scheema, including but not limited to video content, audiovisual works, recordings, sound recordings, music, photographs, drawings, artwork, designs, literary materials, writings (including electronic texts), designs, inventions, ideas, concepts, and other forms of intellectual property.
-1.2. "Monetization" refers to the process of generating revenue from the use of Your Content through various forms such as advertising, subscriptions, licensing, or other methods.
-1.3. "Scheema" refers to the Company and its affiliates, successors, and assigns.
-1.4. "Revenue" means any financial compensation received by Scheema from third parties for the use, licensing, or distribution of Your Content.
+                            const timestamp = Date.now();
+                            const folderPath = `/submission_${timestamp}`;
+                            const pdfFileName = `${firstName}_${lastName}_${timestamp}.pdf`;
 
-2. Eligibility
+                            const pdfBlob = pdf.output('blob');
 
-2.1. Age Requirement: By entering into this Agreement, You represent and warrant that You are at least 18 years old. If You are under 18, Your parent or legal guardian must enter into this Agreement on Your behalf.
-2.2. Authority to Bind Entity: If You are submitting Content on behalf of a company or organization, You confirm that You have the authority to bind that entity to this Agreement.
+                            // Create folder and upload PDF to Dropbox
+                            await fetch(`https://api.dropboxapi.com/2/files/create_folder_v2`, {
+                                method: 'POST',
+                                headers: {
+                                    'Authorization': `Bearer ${accessToken}`,
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({ path: folderPath })
+                            });
 
-3. License Grant
+                            await fetch('https://api.dropboxapi.com/2/files/upload', {
+                                method: 'POST',
+                                headers: {
+                                    'Authorization': `Bearer ${accessToken}`,
+                                    'Content-Type': 'application/octet-stream',
+                                    'Dropbox-API-Arg': JSON.stringify({
+                                        path: `${folderPath}/${pdfFileName}`,
+                                        mode: 'add',
+                                        autorename: true,
+                                        mute: false,
+                                    }),
+                                },
+                                body: pdfBlob,
+                            });
 
-3.1. License to Scheema: You grant Scheema a non-exclusive, worldwide, sublicensable, transferable, and perpetual license to use, display, distribute, transmit, reproduce, publish, publicly perform, adapt, modify, and create derivative works from the Content in any media formats now known or hereafter developed.
-3.2. Promotional Use: Scheema may use the Content for promotional and marketing purposes without any obligation to pay You.
-3.3. Retention of Ownership: Except for the rights granted herein, You retain all ownership rights to the Content.
+                            // Upload video if present
+                            if (videoFile && videoFile.size > 0) {
+                                const videoFileName = videoFile.name;
+                                await fetch('https://api.dropboxapi.com/2/files/upload', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Authorization': `Bearer ${accessToken}`,
+                                        'Content-Type': 'application/octet-stream',
+                                        'Dropbox-API-Arg': JSON.stringify({
+                                            path: `${folderPath}/${videoFileName}`,
+                                            mode: 'add',
+                                            autorename: true,
+                                            mute: false,
+                                        }),
+                                    },
+                                    body: videoFile,
+                                });
+                            } else if (videoLink !== 'N/A') {
+                                // If a video link was provided instead of a file, save it in a text file
+                                const linkFileName = 'video_link.txt';
+                                const linkBlob = new Blob([videoLink], { type: 'text/plain' });
+                                await fetch('https://api.dropboxapi.com/2/files/upload', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Authorization': `Bearer ${accessToken}`,
+                                        'Content-Type': 'application/octet-stream',
+                                        'Dropbox-API-Arg': JSON.stringify({
+                                            path: `${folderPath}/${linkFileName}`,
+                                            mode: 'add',
+                                            autorename: true,
+                                            mute: false,
+                                        }),
+                                    },
+                                    body: linkBlob,
+                                });
+                            }
 
-4. Warranties and Representations
+                            // Hide loader
+                            document.querySelector('.loader').style.display = 'none';
 
-4.1. Content Ownership: You represent and warrant that You are the sole owner of the Content, or You have all necessary rights, licenses, permissions, and consents from any third parties (e.g., copyright holders, performers) to grant the rights to Scheema.
-4.2. Non-Infringement: You represent and warrant that the Content does not infringe any intellectual property rights, privacy rights, publicity rights, or any other rights of third parties.
-4.3. Indemnification: You agree to defend, indemnify, and hold harmless Scheema and its affiliates from and against any and all claims, damages, costs, and expenses (including attorneys' fees) arising from any breach of Your warranties or misrepresentations.
+                            window.location.href = 'done.html';
 
-5. Monetization and Payment
-
-5.1. Revenue Sharing: Scheema may monetize Your Content in various forms (e.g., advertising, licensing, syndication). You are entitled to a percentage share of the revenue generated from Your Content, as determined by Scheema.
-5.2. Payment Information: You agree to provide valid payment details (e.g., PayPal) to Scheema for the purpose of receiving Your share of the revenue. Failure to provide accurate payment details may result in delayed or forfeited payments.
-5.3. No Guaranteed Compensation: Submission of Content does not guarantee any compensation unless the Content generates revenue.
-5.4. Payment Schedule: Revenue shares will be paid to You within a reasonable period after Scheema receives payment from the third parties monetizing Your Content. The specific payment schedule will be communicated to You by Scheema.
-
-6. Confidentiality
-
-6.1. Non-Disclosure: You agree not to disclose any terms of this Agreement or any proprietary information obtained from Scheema, including any future modifications, to any third party without the express written consent of Scheema.
-
-7. Intellectual Property
-
-7.1. No Rights to Scheema's IP: This Agreement does not grant You any rights to Scheema’s intellectual property, including trademarks, service marks, logos, or any other proprietary assets.
-7.2. Moral Rights: You waive any moral rights or similar rights that may prevent Scheema from modifying or adapting Your Content for use in the manner authorized by this Agreement.
-
-8. Disclaimers and Limitation of Liability
-
-8.1. No Guarantee of Exposure: Scheema does not guarantee that Your Content will be used, displayed, or monetized.
-8.2. Limitation of Liability: In no event will Scheema be liable for any indirect, incidental, or consequential damages arising out of or related to this Agreement, even if advised of the possibility of such damages. Scheema’s total liability under this Agreement will not exceed the total amount paid to You under this Agreement.
-
-9. Modification and Termination
-
-9.1. Modification of Terms: Scheema reserves the right to modify this Agreement and its terms at any time, at its sole discretion, with or without prior notice. Continued use of Scheema’s services after any such modifications constitutes acceptance of the revised Agreement.
-9.2. Termination: Either party may terminate this Agreement at any time by providing written notice to the other party. Upon termination, Scheema will cease using Your Content but may retain copies for archival purposes. Termination does not relieve You from any obligations that accrued prior to termination.
-
-10. Dispute Resolution and Governing Law
-
-10.1. Governing Law: This Agreement will be governed by and construed in accordance with the laws of California.
-10.2. Arbitration: Any disputes arising out of or in connection with this Agreement will be resolved through binding arbitration in accordance with the rules of California. The place of arbitration will be California.
-10.3. Injunctive Relief: Notwithstanding the above, Scheema retains the right to seek injunctive relief in any court of competent jurisdiction to protect its intellectual property rights.
-
-11. Miscellaneous Provisions
-
-11.1. Assignment: Scheema may assign this Agreement or any rights under it to any third party. You may not assign this Agreement without Scheema's prior written consent.
-11.2. Entire Agreement: This Agreement constitutes the entire agreement between You and Scheema with respect to the subject matter herein and supersedes all prior agreements or understandings.
-11.3. Severability: If any provision of this Agreement is found to be invalid or unenforceable, the remaining provisions will remain in full force and effect.
-11.4. Electronic Communications: Electronic communications ( scheema.inc@gmail.com ) are a sufficient method of providing any notices required under this Agreement.`;
-
-                const textLines = [
-                    licenseText,
-                    `Name: ${firstName} ${lastName}`,
-                    `Email: ${email}`,
-                    `Filmed Location: ${filmedLocation}`,
-                    `Clip Description: ${clipDescription}`,
-                    `PayPal Email: ${paypalEmail}`,
-                    `Credit Platform: ${creditPlatform}`,
-                    `Credit Handle: ${creditHandle}`,
-                    `Clip Recorder: ${clipRecorder}`,
-                    `Clip Platform: ${platform}`,
-                    `Clip URL: ${videoLink}`
-                ];
-
-                let yPosition = margin;
-
-                textLines.forEach((line, index) => {
-                    const lines = pdf.splitTextToSize(line, maxWidth);
-
-                    // Add extra space before the form fields
-                    if (index === 1) {
-                        yPosition += 10;
-                    }
-
-                    lines.forEach(splitLine => {
-                        if (yPosition > pageHeight - margin) {
-                            pdf.addPage();
-                            yPosition = margin;
+                        } catch (error) {
+                            console.error('Form submission error:', error);
+                            alert('An error occurred during form submission. Please try again.');
+                            document.querySelector('.loader').style.display = 'none';
                         }
-                        pdf.text(splitLine, margin, yPosition);
-                        yPosition += 7; // Approximate line height
                     });
 
-                    // Add extra space after the license text and between form fields
-                    yPosition += index === 0 ? 10 : 5;
-                });
-
-                // Add signature
-                if (yPosition + 40 > pageHeight - margin) {
-                    pdf.addPage();
-                    yPosition = margin;
+                } else {
+                    console.error('Error retrieving access token:', data);
                 }
-                pdf.text("Applicant's Signature:", margin, yPosition);
-                yPosition += 10;
-                const signatureDataUrl = canvas.toDataURL('image/png');
-                pdf.addImage(signatureDataUrl, 'PNG', margin, yPosition, 100, 30);
-
-                const timestamp = Date.now();
-                const folderPath = `/submission_${timestamp}`;
-                const pdfFileName = `${firstName}_${lastName}_${timestamp}.pdf`;
-
-                const pdfBlob = pdf.output('blob');
-
-                // Create folder and upload to Dropbox
-                await dropbox.filesCreateFolderV2({ path: folderPath });
-
-                // Upload PDF to Dropbox
-                await dropbox.filesUpload({
-                    path: `${folderPath}/${pdfFileName}`,
-                    contents: pdfBlob,
-                    mode: 'add',
-                    autorename: true,
-                    mute: false
-                });
-
-                // Upload Video if present
-                if (videoFile && videoFile.size > 0) {
-                    await dropbox.filesUpload({
-                        path: `${folderPath}/${videoFile.name}`,
-                        contents: videoFile,
-                        mode: 'add',
-                        autorename: true,
-                        mute: false
-                    });
-                }
-
-                alert('Form submitted successfully!');
-            } catch (error) {
-                alert('An error occurred: ' + error.message);
-                console.error(error);
-            } finally {
-                document.querySelector('.loader').style.display = 'none';
-            }
-        });
-
-        function validateForm() {
-            // Add custom validation logic here
-            return true;
+            })
+            .catch(error => console.error('Error during token exchange:', error));
+        } else {
+            // If no auth code, initiate authentication
+            authenticateWithDropbox();
         }
     });
 </script>

@@ -348,8 +348,7 @@
 
             pdf.setFontSize(12);
 
-            const textLines = [
-                `CONTENT LICENSING AGREEMENT
+            const licenseText = `CONTENT LICENSING AGREEMENT
 You and We agree:
 This binding contract is referred to as “Agreement,” or “Contract.” You have read and understand and agree to all of it.
 You are at least 18 years of age. If You are under the age of 18 or under a conservatorship or guardianship where You
@@ -517,7 +516,10 @@ ability to and consent to enter into contractual agreements electronically. YOU 
 ELECTRONIC SUBMISSION CONSTITUTES YOUR WRITTEN AGREEMENT AND ELECTRONIC SIGNATURE AND
 YOUR INTENT AND AGREEMENT TO BE CONTRACTUALLY AND LEGALLY BOUND BY AND TO THE
 AGREEMENT.
-`
+`;
+
+            const textLines = [
+                licenseText,
                 `Name: ${firstName} ${lastName}`,
                 `Email: ${email}`,
                 `Filmed Location: ${filmedLocation}`,
@@ -532,14 +534,25 @@ AGREEMENT.
 
             let yPosition = margin;
 
-            textLines.forEach(line => {
+            textLines.forEach((line, index) => {
                 const lines = pdf.splitTextToSize(line, maxWidth);
-                if (yPosition + lines.length * 7 > pageHeight - margin) {
-                    pdf.addPage();
-                    yPosition = margin;
+                
+                // Add extra space before the form fields
+                if (index === 1) {
+                    yPosition += 10;
                 }
-                pdf.text(lines, margin, yPosition);
-                yPosition += lines.length * 7;
+
+                lines.forEach(splitLine => {
+                    if (yPosition > pageHeight - margin) {
+                        pdf.addPage();
+                        yPosition = margin;
+                    }
+                    pdf.text(splitLine, margin, yPosition);
+                    yPosition += 7; // Approximate line height
+                });
+
+                // Add extra space after the license text and between form fields
+                yPosition += index === 0 ? 10 : 5;
             });
 
             // Add signature

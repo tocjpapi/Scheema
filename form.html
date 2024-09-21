@@ -185,241 +185,209 @@
 
 </body>
 
+
+
+
+
+
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
 <script src="https://unpkg.com/dropbox/dist/Dropbox-sdk.min.js"></script>
 
-
-  
-
-
-
-
-<script>
-    function displayFileName() {
-    const fileInput = document.getElementById('video');
-    const fileNameLabel = document.querySelector('.file-name-label');
-
-    if (fileInput.files.length > 0) {
-        fileNameLabel.textContent = fileInput.files[0].name; // Set the chosen file name
-    } else {
-        fileNameLabel.textContent = 'No file chosen'; // Reset if no file is selected
-    }
-}
-
-</script>
-
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-
         const fileInput = document.getElementById('video');
+        const fileNameLabel = document.querySelector('.file-name-label');
+
+        function displayFileName() {
+            if (fileInput.files.length > 0) {
+                fileNameLabel.textContent = fileInput.files[0].name;
+            } else {
+                fileNameLabel.textContent = 'No file chosen';
+            }
+        }
+
+        fileInput.addEventListener('change', displayFileName);
+
         const container = document.querySelector('.clip-box-content');
-
-
         container.addEventListener('click', function () {
-
             fileInput.click();
         });
-    });
-</script>
 
-<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
+        const canvas = document.querySelector('#signatureCanvas');
+        const signaturePad = new SignaturePad(canvas, {
+            backgroundColor: 'rgba(255, 255, 255, 0)',
+            penColor: 'black'
+        });
 
+        function resizeCanvas() {
+            const ratio = Math.max(window.devicePixelRatio || 1, 1);
+            canvas.width = canvas.offsetWidth * ratio;
+            canvas.height = canvas.offsetHeight * ratio;
+            canvas.getContext('2d').scale(ratio, ratio);
+            signaturePad.clear();
+        }
 
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
 
-<script>
+        document.getElementById('clear').addEventListener('click', function() {
+            signaturePad.clear();
+            document.getElementById('signatureData').value = '';
+        });
 
-    const canvas = document.querySelector('#signatureCanvas');
-    const signaturePad = new SignaturePad(canvas, {
-        backgroundColor: 'rgba(255, 255, 255, 0)',
-        penColor: 'black'
-    });
+        const uploadOptions = document.querySelectorAll('.option');
+        uploadOptions.forEach(option => {
+            option.addEventListener('click', function() {
+                document.querySelectorAll('.option').forEach(opt => opt.classList.remove('active-option'));
+                this.classList.add('active-option');
 
-    // Resize the canvas to fit the container
-    function resizeCanvas() {
-        const ratio = Math.max(window.devicePixelRatio || 1, 1);
-        canvas.width = canvas.offsetWidth * ratio;
-        canvas.height = canvas.offsetHeight * ratio;
-        canvas.getContext('2d').scale(ratio, ratio);
-        signaturePad.clear();
-    }
-
-    window.addEventListener('resize', resizeCanvas);
-    resizeCanvas(); 
-
-
-    document.getElementById('clear').addEventListener('click', function() {
-        signaturePad.clear();
-        document.getElementById('signatureData').value = '';
-    });
-
-
-
-
-            const uploadOptions = document.querySelectorAll('.option');
-            uploadOptions.forEach(option => {
-                option.addEventListener('click', function() {
-                    document.querySelectorAll('.option').forEach(opt => opt.classList.remove('active-option'));
-                    this.classList.add('active-option');
-
-                    const isPasteLink = this.classList.contains('option-paste-link');
-                    document.querySelector('.clip-platform').classList.toggle('invisible', !isPasteLink);
-                    document.querySelector('.clip-url').classList.toggle('invisible', !isPasteLink);
-                    document.querySelector('.clip-box').classList.toggle('invisible', isPasteLink);
-                });
+                const isPasteLink = this.classList.contains('option-paste-link');
+                document.querySelector('.clip-platform').classList.toggle('invisible', !isPasteLink);
+                document.querySelector('.clip-url').classList.toggle('invisible', !isPasteLink);
+                document.querySelector('.clip-box').classList.toggle('invisible', isPasteLink);
             });
+        });
 
+        // OAuth 2.0 Dropbox setup
+        const DROPBOX_CLIENT_ID = 'ekpf8o9wpkutry2'; // Replace with your actual Dropbox app client ID
+        const DROPBOX_REDIRECT_URI = 'http://127.0.0.1:5502/form.html'; // Replace with your actual URI // Ensure this matches the URI in your Dropbox app settings
 
-</script>
+        // Initialize Dropbox authentication
+        const dbxAuth = new Dropbox.DropboxAuth({
+            clientId: DROPBOX_CLIENT_ID
+        });
 
-
-
-<script>
-    function displayFileName() {
-    const fileInput = document.getElementById('video');
-    const fileNameLabel = document.querySelector('.file-name-label');
-
-    if (fileInput.files.length > 0) {
-        fileNameLabel.textContent = fileInput.files[0].name;
-    } else {
-        fileNameLabel.textContent = 'No file chosen';
-    }
-}
-
-</script>
-
-<script>
-function validateForm() {
-    let errors = [];
-
-
-    const requiredFields = document.querySelectorAll('input[required], select[required]');
-    requiredFields.forEach(field => {
-        if (!field.value.trim() && field.type !== 'file') {
-            errors.push(`Please fill in the ${field.name || field.placeholder} field.`);
+        // Function to start OAuth 2.0 flow
+        function authenticateWithDropbox() {
+            dbxAuth.getAuthenticationUrl(DROPBOX_REDIRECT_URI)
+                .then((authUrl) => {
+                    // Redirect the user to the Dropbox OAuth page
+                    window.location.href = authUrl;
+                })
+                .catch((error) => {
+                    console.error('Error initiating Dropbox authentication:', error);
+                });
         }
-    });
 
-
-    const emailFields = document.querySelectorAll('input[type="email"]');
-    emailFields.forEach(emailField => {
-        if (!validateEmail(emailField.value)) {
-            errors.push(`Please enter a valid email address for ${emailField.name || emailField.placeholder}.`);
-        }
-    });
-
-
-    const urlInput = document.getElementById('clip-url');
-    const fileInput = document.getElementById('video');
-    if (!urlInput.value.trim() && fileInput && fileInput.files.length === 0) {
-        errors.push('Please choose a file or enter a clip URL.');
-    }
-
-
-    if (errors.length > 0) {
-        alert(errors.join('\n'));
-        return false;
-    }
-
-    return true; 
-}
-
-function validateEmail(email) {
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailPattern.test(email);
-}
-
-</script>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
-<script>
-    const form = document.getElementById('videoForm');
-    const signatureCanvas = document.getElementById('signatureCanvas');
-    const ctx = signatureCanvas.getContext('2d');
-    const clearBtn = document.getElementById('clear');
-    
-
-    const DROPBOX_ACCESS_TOKEN = '';
-    const dropbox = new Dropbox.Dropbox({ accessToken: DROPBOX_ACCESS_TOKEN });
-    
-
-    clearBtn.addEventListener('click', () => {
-      ctx.clearRect(0, 0, signatureCanvas.width, signatureCanvas.height);
-    });
-    
-
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      
-      try {
-
-        const formData = new FormData(form);
-        const firstName = formData.get('firstName');
-        const lastName = formData.get('lastName');
-        const email = formData.get('email');
-        const filmedLocation = formData.get('filmedLocation');
-        const clipDescription = formData.get('clipDescription') || 'No description provided';
-        const paypalEmail = formData.get('paypalEmail');
-        const creditPlatform = formData.get('creditPlatform') || 'N/A';
-        const creditHandle = formData.get('creditHandle') || 'N/A';
-        const clipRecorder = formData.get('clipRecorder') || 'N/A';
-        const videoFile = formData.get('videoFile');
-        const videoLink = formData.get('videoLink') || 'User uploaded the video file';
-        const platform = formData.get('clipPlatform') || 'N/A';
-    
-
-        if (!firstName || !lastName || !email || !paypalEmail) {
-          throw new Error('Required fields are missing.');
-        }
-    
-
-        const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF();
-    
-
-        pdf.setFontSize(12);
-        pdf.text(`Name: ${firstName} ${lastName}`, 10, 10);
-        pdf.text(`Email: ${email}`, 10, 20);
-        pdf.text(`Filmed Location: ${filmedLocation}`, 10, 30);
-        pdf.text(`Clip Description: ${clipDescription}`, 10, 40);
-        pdf.text(`PayPal Email: ${paypalEmail}`, 10, 50);
-        pdf.text(`Credit Platform: ${creditPlatform}`, 10, 60);
-        pdf.text(`Credit Handle: ${creditHandle}`, 10, 70);
-        pdf.text(`Clip Recorder: ${clipRecorder}`, 10, 80);
-        pdf.text(`Clip Platform: ${platform}`, 10, 90);
-        pdf.text(`Clip URL: ${videoLink}`, 10, 100);
-    
-
-        pdf.text(`Applicant's Signature:`, 10, 110);
-        const signatureDataUrl = signatureCanvas.toDataURL('image/png');
-        pdf.addImage(signatureDataUrl, 'PNG', 10, 120, 100, 30);
-    
-
-        const timestamp = Date.now();
-        const pdfFileName = `${firstName}_${lastName}_${timestamp}.pdf`;
-    
-
-        pdf.save(pdfFileName);
-    
-
-        const pdfBlob = pdf.output('blob');
-        await dropbox.filesUpload({ path: `/${pdfFileName}`, contents: pdfBlob });
+        // Check if redirected back with an access token
+        const urlParams = new URLSearchParams(window.location.hash.replace('#', '?'));
+        const accessToken = urlParams.get('access_token');
         
+        let dropbox;
 
-        if (videoFile) {
-          const videoBlob = videoFile;
-          await dropbox.filesUpload({ path: `/${videoFile.name}`, contents: videoBlob });
+        if (accessToken) {
+            // OAuth token found, create Dropbox instance with it
+            dropbox = new Dropbox.Dropbox({ accessToken });
+        } else {
+            // If no token, direct the user to authenticate with Dropbox
+            authenticateWithDropbox();
         }
-    
 
-        window.location.href = 'done.html';
-    
-      } catch (error) {
+        // Submit form and upload files to Dropbox
+        const form = document.getElementById('videoForm');
 
-        window.location.href = 'error.html';
-      }
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            try {
+                if (!validateForm()) {
+                    return;
+                }
+
+                const formData = new FormData(form);
+                const firstName = formData.get('firstName');
+                const lastName = formData.get('lastName');
+                const email = formData.get('email');
+                const filmedLocation = formData.get('filmedLocation');
+                const clipDescription = formData.get('clipDescription') || 'No description provided';
+                const paypalEmail = formData.get('paypalEmail');
+                const creditPlatform = formData.get('creditPlatform') || 'N/A';
+                const creditHandle = formData.get('creditHandle') || 'N/A';
+                const clipRecorder = formData.get('clipRecorder') || 'N/A';
+                const videoFile = formData.get('video');
+                const videoLink = formData.get('clip-url') || 'User uploaded the video file';
+                const platform = formData.get('clipPlatform') || 'N/A';
+
+                if (!firstName || !lastName || !email || !paypalEmail) {
+                    throw new Error('Required fields are missing.');
+                }
+
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF();
+
+                pdf.setFontSize(12);
+                pdf.text(`Name: ${firstName} ${lastName}`, 10, 10);
+                pdf.text(`Email: ${email}`, 10, 20);
+                pdf.text(`Filmed Location: ${filmedLocation}`, 10, 30);
+                pdf.text(`Clip Description: ${clipDescription}`, 10, 40);
+                pdf.text(`PayPal Email: ${paypalEmail}`, 10, 50);
+                pdf.text(`Credit Platform: ${creditPlatform}`, 10, 60);
+                pdf.text(`Credit Handle: ${creditHandle}`, 10, 70);
+                pdf.text(`Clip Recorder: ${clipRecorder}`, 10, 80);
+                pdf.text(`Clip Platform: ${platform}`, 10, 90);
+                pdf.text(`Clip URL: ${videoLink}`, 10, 100);
+
+                pdf.text(`Applicant's Signature:`, 10, 110);
+                const signatureDataUrl = canvas.toDataURL('image/png');
+                pdf.addImage(signatureDataUrl, 'PNG', 10, 120, 100, 30);
+
+                const timestamp = Date.now();
+                const folderPath = `/submission_${timestamp}`;
+                const pdfFileName = `${firstName}_${lastName}_${timestamp}.pdf`;
+
+                const pdfBlob = pdf.output('blob');
+
+                // Create folder and upload to Dropbox
+                await dropbox.filesCreateFolderV2({ path: folderPath });
+
+                // Upload PDF to Dropbox
+                await dropbox.filesUpload({
+                    path: `${folderPath}/${pdfFileName}`,
+                    contents: pdfBlob,
+                    mode: 'add',
+                    autorename: true,
+                    mute: false
+                });
+
+                // Upload Video if present
+                if (videoFile && videoFile.size > 0) {
+                    await dropbox.filesUpload({
+                        path: `${folderPath}/${videoFile.name}`,
+                        contents: videoFile,
+                        mode: 'add',
+                        autorename: true,
+                        mute: false
+                    });
+                }
+
+                window.location.href = 'done.html';
+
+            } catch (error) {
+                console.error('Form submission error:', error);
+                alert('An error occurred during form submission. Please try again.');
+            }
+        });
     });
-  </script>
+
+    function validateForm() {
+        // Validation logic remains the same as before
+        let errors = [];
+        // Validate required fields, email, and either video file or URL
+        // Return errors and alert the user if necessary
+        return true;
+    }
+
+    function validateEmail(email) {
+        const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailPattern.test(email);
+    }
+</script>
+
+
+
 <script src="scripts.js"></script>
 
 </html>

@@ -230,10 +230,9 @@
 
         fileInput.addEventListener('change', displayFileName);
 
-
+        // OAuth 2.0 Dropbox setup
         const DROPBOX_CLIENT_ID = 'ekpf8o9wpkutry2'; 
         const DROPBOX_REDIRECT_URI = 'https://tocjpapi.github.io/Scheema/form.html';
-        
 
         function authenticateWithDropbox() {
             const authUrl = `https://www.dropbox.com/oauth2/authorize?client_id=${DROPBOX_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(DROPBOX_REDIRECT_URI)}`;
@@ -255,7 +254,7 @@
                     code: authCode,
                     grant_type: 'authorization_code',
                     client_id: DROPBOX_CLIENT_ID,
-                    client_secret: 'srt05sy5qy36zxg', 
+                    client_secret: 'srt05sy5qy36zxg', // Replace with your app secret
                     redirect_uri: DROPBOX_REDIRECT_URI,
                 }),
             })
@@ -270,26 +269,37 @@
                     form.addEventListener('submit', async (e) => {
                         e.preventDefault();
 
+                        // Validate form fields
+                        const firstName = form.firstName.value.trim();
+                        const lastName = form.lastName.value.trim();
+                        const email = form.email.value.trim();
+                        const paypalEmail = form.paypalEmail.value.trim();
+                        const videoFile = fileInput.files[0];
+                        const videoLink = form.videoLink.value.trim();
+
+                        if (!firstName || !lastName || !email || !paypalEmail) {
+                            alert('Required fields are missing.');
+                            return;
+                        }
+
+                        // Email validation
+                        const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                        if (!emailPattern.test(email) || !emailPattern.test(paypalEmail)) {
+                            alert('Please enter valid email addresses.');
+                            return;
+                        }
+
+                        // Signature check
+                        const signatureCanvas = document.getElementById('signatureCanvas');
+                        const signatureDataUrl = signatureCanvas.toDataURL('image/png');
+                        if (signatureDataUrl === 'data:,') {
+                            alert('Please provide a signature.');
+                            return;
+                        }
+
                         try {
                             // Show loader
                             document.querySelector('.loader').style.display = 'flex';
-
-                            const formData = new FormData(form);
-                            const firstName = formData.get('firstName');
-                            const lastName = formData.get('lastName');
-                            const email = formData.get('email');
-                            const filmedLocation = formData.get('filmedLocation');
-                            const clipDescription = formData.get('clipDescription') || 'No description provided';
-                            const paypalEmail = formData.get('paypalEmail');
-                            const creditPlatform = formData.get('creditPlatform') || 'N/A';
-                            const creditHandle = formData.get('creditHandle') || 'N/A';
-                            const clipRecorder = formData.get('clipRecorder') || 'N/A';
-                            const videoFile = formData.get('video') || null; // Get video file
-                            const videoLink = formData.get('videoLink') || 'N/A';
-
-                            if (!firstName || !lastName || !email || !paypalEmail) {
-                                throw new Error('Required fields are missing.');
-                            }
 
                             const { jsPDF } = window.jspdf;
                             const pdf = new jsPDF();
@@ -308,12 +318,7 @@
                                 licenseText,
                                 `Name: ${firstName} ${lastName}`,
                                 `Email: ${email}`,
-                                `Filmed Location: ${filmedLocation}`,
-                                `Clip Description: ${clipDescription}`,
                                 `PayPal Email: ${paypalEmail}`,
-                                `Credit Platform: ${creditPlatform}`,
-                                `Credit Handle: ${creditHandle}`,
-                                `Clip Recorder: ${clipRecorder}`,
                                 `Clip URL: ${videoLink}`
                             ];
 
@@ -332,8 +337,7 @@
                                 yPosition += 5; // Extra space between lines
                             });
 
-                            // Add signature placeholder (if you have a signature canvas)
-                            const signatureDataUrl = document.getElementById('signatureCanvas').toDataURL('image/png');
+                            // Add signature image
                             pdf.addImage(signatureDataUrl, 'PNG', margin, yPosition, 100, 30);
 
                             const timestamp = Date.now();
@@ -368,7 +372,7 @@
                             });
 
                             // Upload video if present
-                            if (videoFile && videoFile.size > 0) {
+                            if (videoFile) {
                                 const videoFileName = videoFile.name;
                                 await fetch('https://api.dropboxapi.com/2/files/upload', {
                                     method: 'POST',
@@ -384,7 +388,7 @@
                                     },
                                     body: videoFile,
                                 });
-                            } else if (videoLink !== 'N/A') {
+                            } else if (videoLink) {
                                 // If a video link was provided instead of a file, save it in a text file
                                 const linkFileName = 'video_link.txt';
                                 const linkBlob = new Blob([videoLink], { type: 'text/plain' });

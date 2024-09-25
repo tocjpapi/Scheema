@@ -272,19 +272,18 @@
 
     // OAuth 2.0 Dropbox setup
     const DROPBOX_CLIENT_ID = 'ekpf8o9wpkutry2';
+    const DROPBOX_CLIENT_SECRET = 'YOUR_DROPBOX_CLIENT_SECRET'; // You need to securely store this
     const DROPBOX_REDIRECT_URI = 'https://tocjpapi.github.io/Scheema/form.html';
-    const DROPBOX_CLIENT_SECRET = 'srt05sy5qy36zxg'; 
 
     // Initialize Dropbox authentication
     const dbxAuth = new Dropbox.DropboxAuth({
         clientId: DROPBOX_CLIENT_ID,
-        
         clientSecret: DROPBOX_CLIENT_SECRET
     });
 
     // Function to start OAuth 2.0 flow
     function authenticateWithDropbox() {
-        dbxAuth.getAuthenticationUrl(DROPBOX_REDIRECT_URI, null, 'code')
+        dbxAuth.getAuthenticationUrl(DROPBOX_REDIRECT_URI, null, 'code', 'offline', null, 'none', false)
             .then((authUrl) => {
                 // Redirect the user to the Dropbox OAuth page
                 window.location.href = authUrl;
@@ -294,13 +293,16 @@
             });
     }
 
+    // Check if we're on the redirect URI
+    const isRedirectUri = window.location.href.startsWith(DROPBOX_REDIRECT_URI);
+
     // Check if redirected back with an authorization code
     const urlParams = new URLSearchParams(window.location.search);
     const authCode = urlParams.get('code');
     
     let dropbox;
 
-    if (authCode) {
+    if (isRedirectUri && authCode) {
         // Exchange the auth code for an access token and refresh token
         dbxAuth.getAccessTokenFromCode(DROPBOX_REDIRECT_URI, authCode)
             .then((response) => {
@@ -309,6 +311,9 @@
                 localStorage.setItem('dropboxAccessToken', access_token);
                 localStorage.setItem('dropboxRefreshToken', refresh_token);
                 dropbox = new Dropbox.Dropbox({ accessToken: access_token });
+                
+                // Clear the URL parameters
+                window.history.replaceState({}, document.title, DROPBOX_REDIRECT_URI);
             })
             .catch((error) => {
                 console.error('Error getting access token:', error);

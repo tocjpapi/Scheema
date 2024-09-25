@@ -275,22 +275,27 @@
     const DROPBOX_CLIENT_SECRET = 'srt05sy5qy36zxg'; // You need to securely store this
     const DROPBOX_REDIRECT_URI = 'https://tocjpapi.github.io/Scheema/form.html';
 
-    // Initialize Dropbox authentication
-    const dbxAuth = new Dropbox.DropboxAuth({
-        clientId: DROPBOX_CLIENT_ID,
-        clientSecret: DROPBOX_CLIENT_SECRET
-    });
+// Initialize Dropbox authentication with specific scopes
+const dbxAuth = new Dropbox.DropboxAuth({
+    clientId: DROPBOX_CLIENT_ID,
+    clientSecret: DROPBOX_CLIENT_SECRET,
+    fetch: fetch
+});
 
     // Function to start OAuth 2.0 flow
     function authenticateWithDropbox() {
-        dbxAuth.getAuthenticationUrl(DROPBOX_REDIRECT_URI, null, 'code', 'offline', null, 'none', false)
-            .then((authUrl) => {
-                // Redirect the user to the Dropbox OAuth page
-                window.location.href = authUrl;
-            })
-            .catch((error) => {
-                console.error('Error initiating Dropbox authentication:', error);
-            });
+// Request specific scopes for file upload and access
+dbxAuth.getAuthenticationUrl(DROPBOX_REDIRECT_URI, null, 'code', 'offline', [
+    'files.content.write',
+    'files.content.read',
+    'account_info.read'
+], 'none', false)
+    .then((authUrl) => {
+        window.location.href = authUrl;
+    })
+    .catch((error) => {
+        console.error('Error initiating Dropbox authentication:', error);
+    });
     }
 
     // Check if we're on the redirect URI

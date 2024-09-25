@@ -271,69 +271,62 @@
     });
 
     // OAuth 2.0 Dropbox setup
-    const DROPBOX_CLIENT_ID = 'ekpf8o9wpkutry2';
-    const DROPBOX_CLIENT_SECRET = 'srt05sy5qy36zxg'; // You need to securely store this
-    const DROPBOX_REDIRECT_URI = 'https://tocjpapi.github.io/Scheema/form.html';
+// OAuth 2.0 Dropbox setup
+const DROPBOX_CLIENT_ID = 'ekpf8o9wpkutry2';
+const DROPBOX_REDIRECT_URI = 'https://tocjpapi.github.io/Scheema/form.html'; // Adjust to your redirect URI
 
-// Initialize Dropbox authentication with specific scopes
+// Initialize Dropbox authentication
 const dbxAuth = new Dropbox.DropboxAuth({
     clientId: DROPBOX_CLIENT_ID,
-    clientSecret: DROPBOX_CLIENT_SECRET,
-    fetch: fetch
 });
 
-    // Function to start OAuth 2.0 flow
-    function authenticateWithDropbox() {
-// Request specific scopes for file upload and access
-dbxAuth.getAuthenticationUrl(DROPBOX_REDIRECT_URI, null, 'code', 'offline', [
-    'files.content.write',
-    'files.content.read',
-    'account_info.read'
-], 'none', false)
-    .then((authUrl) => {
-        window.location.href = authUrl;
-    })
-    .catch((error) => {
-        console.error('Error initiating Dropbox authentication:', error);
-    });
-    }
+// Function to start OAuth 2.0 flow
+function authenticateWithDropbox() {
+    dbxAuth.getAuthenticationUrl(DROPBOX_REDIRECT_URI, null, 'code', 'offline', null, 'none', false)
+        .then((authUrl) => {
+            // Redirect the user to the Dropbox OAuth page
+            window.location.href = authUrl;
+        })
+        .catch((error) => {
+            console.error('Error initiating Dropbox authentication:', error);
+        });
+}
 
-    // Check if we're on the redirect URI
-    const isRedirectUri = window.location.href.startsWith(DROPBOX_REDIRECT_URI);
+// Check if we're on the redirect URI
+const isRedirectUri = window.location.href.startsWith(DROPBOX_REDIRECT_URI);
 
-    // Check if redirected back with an authorization code
-    const urlParams = new URLSearchParams(window.location.search);
-    const authCode = urlParams.get('code');
-    
-    let dropbox;
+// Check if redirected back with an authorization code
+const urlParams = new URLSearchParams(window.location.search);
+const authCode = urlParams.get('code');
 
-    if (isRedirectUri && authCode) {
-        // Exchange the auth code for an access token and refresh token
-        dbxAuth.getAccessTokenFromCode(DROPBOX_REDIRECT_URI, authCode)
-            .then((response) => {
-                const { access_token, refresh_token } = response.result;
-                // Store these securely, preferably on your server
-                localStorage.setItem('dropboxAccessToken', access_token);
-                localStorage.setItem('dropboxRefreshToken', refresh_token);
-                dropbox = new Dropbox.Dropbox({ accessToken: access_token });
-                
-                // Clear the URL parameters
-                window.history.replaceState({}, document.title, DROPBOX_REDIRECT_URI);
-            })
-            .catch((error) => {
-                console.error('Error getting access token:', error);
-                authenticateWithDropbox();
-            });
-    } else {
-        // Check if we have a stored access token
-        const storedAccessToken = localStorage.getItem('dropboxAccessToken');
-        if (storedAccessToken) {
-            dropbox = new Dropbox.Dropbox({ accessToken: storedAccessToken });
-        } else {
-            // If no token, direct the user to authenticate with Dropbox
+let dropbox;
+
+if (isRedirectUri && authCode) {
+    // Exchange the auth code for an access token and refresh token
+    dbxAuth.getAccessTokenFromCode(DROPBOX_REDIRECT_URI, authCode)
+        .then((response) => {
+            const { access_token } = response.result;
+            // Store this token securely in the browser for this session
+            localStorage.setItem('dropboxAccessToken', access_token);
+            dropbox = new Dropbox.Dropbox({ accessToken: access_token });
+
+            // Clear the URL parameters
+            window.history.replaceState({}, document.title, DROPBOX_REDIRECT_URI);
+        })
+        .catch((error) => {
+            console.error('Error getting access token:', error);
             authenticateWithDropbox();
-        }
+        });
+} else {
+    // Check if we have a stored access token
+    const storedAccessToken = localStorage.getItem('dropboxAccessToken');
+    if (storedAccessToken) {
+        dropbox = new Dropbox.Dropbox({ accessToken: storedAccessToken });
+    } else {
+        // If no token, direct the user to authenticate with Dropbox
+        authenticateWithDropbox();
     }
+}
 
     // Function to refresh the access token
     async function refreshAccessToken() {

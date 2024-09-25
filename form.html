@@ -271,17 +271,19 @@
     });
 
     // OAuth 2.0 Dropbox setup
-    const DROPBOX_CLIENT_ID = 'ekpf8o9wpkutry2'; 
+    const DROPBOX_CLIENT_ID = 'ekpf8o9wpkutry2';
     const DROPBOX_REDIRECT_URI = 'https://tocjpapi.github.io/Scheema/form.html';
+    const DROPBOX_CLIENT_SECRET = 'srt05sy5qy36zxg'; 
 
     // Initialize Dropbox authentication
     const dbxAuth = new Dropbox.DropboxAuth({
-        clientId: DROPBOX_CLIENT_ID
+        clientId: DROPBOX_CLIENT_ID,
+        clientSecret: DROPBOX_CLIENT_SECRET
     });
 
     // Function to start OAuth 2.0 flow
     function authenticateWithDropbox() {
-        dbxAuth.getAuthenticationUrl(DROPBOX_REDIRECT_URI)
+        dbxAuth.getAuthenticationUrl(DROPBOX_REDIRECT_URI, null, 'code')
             .then((authUrl) => {
                 // Redirect the user to the Dropbox OAuth page
                 window.location.href = authUrl;
@@ -291,18 +293,54 @@
             });
     }
 
-    // Check if redirected back with an access token
-    const urlParams = new URLSearchParams(window.location.hash.replace('#', '?'));
-    const accessToken = urlParams.get('access_token');
+    // Check if redirected back with an authorization code
+    const urlParams = new URLSearchParams(window.location.search);
+    const authCode = urlParams.get('code');
     
     let dropbox;
 
-    if (accessToken) {
-        // OAuth token found, create Dropbox instance with it
-        dropbox = new Dropbox.Dropbox({ accessToken });
+    if (authCode) {
+        // Exchange the auth code for an access token and refresh token
+        dbxAuth.getAccessTokenFromCode(DROPBOX_REDIRECT_URI, authCode)
+            .then((response) => {
+                const { access_token, refresh_token } = response.result;
+                // Store these securely, preferably on your server
+                localStorage.setItem('dropboxAccessToken', access_token);
+                localStorage.setItem('dropboxRefreshToken', refresh_token);
+                dropbox = new Dropbox.Dropbox({ accessToken: access_token });
+            })
+            .catch((error) => {
+                console.error('Error getting access token:', error);
+                authenticateWithDropbox();
+            });
     } else {
-        // If no token, direct the user to authenticate with Dropbox
-        authenticateWithDropbox();
+        // Check if we have a stored access token
+        const storedAccessToken = localStorage.getItem('dropboxAccessToken');
+        if (storedAccessToken) {
+            dropbox = new Dropbox.Dropbox({ accessToken: storedAccessToken });
+        } else {
+            // If no token, direct the user to authenticate with Dropbox
+            authenticateWithDropbox();
+        }
+    }
+
+    // Function to refresh the access token
+    async function refreshAccessToken() {
+        const refreshToken = localStorage.getItem('dropboxRefreshToken');
+        if (!refreshToken) {
+            throw new Error('No refresh token available');
+        }
+
+        try {
+            const response = await dbxAuth.refreshAccessToken(refreshToken);
+            const { access_token, refresh_token } = response.result;
+            localStorage.setItem('dropboxAccessToken', access_token);
+            localStorage.setItem('dropboxRefreshToken', refresh_token);
+            dropbox = new Dropbox.Dropbox({ accessToken: access_token });
+        } catch (error) {
+            console.error('Error refreshing access token:', error);
+            authenticateWithDropbox();
+        }
     }
 
     // Submit form and upload files to Dropbox
@@ -403,39 +441,36 @@
 
             const pdfBlob = pdf.output('blob');
 
-            // Create folder and upload to Dropbox
-            await dropbox.filesCreateFolderV2({ path: folderPath });
-
-            // Upload PDF to Dropbox
-            await dropbox.filesUpload({
-                path: `${folderPath}/${pdfFileName}`,
-                contents: pdfBlob,
-                mode: 'add',
-                autorename: true,
-                mute: false
-            });
-
-            // Upload Video if present
-            if (videoFile && videoFile.size > 0) {
-                const videoFileName = videoFile.name;
-                await dropbox.filesUpload({
-                    path: `${folderPath}/${videoFileName}`,
-                    contents: videoFile,
-                    mode: 'add',
-                    autorename: true,
-                    mute: false
-                });
-            } else if (videoLink !== 'N/A') {
-                // If a video link was provided instead of a file, save it in a text file
-                const linkFileName = 'video_link.txt';
-                const linkBlob = new Blob([videoLink], { type: 'text/plain' });
-                await dropbox.filesUpload({
-                    path: `${folderPath}/${linkFileName}`,
-                    contents: linkBlob,
-                    mode: 'add',
-                    autorename: true,
-                    mute: false
-                });
+            // Attempt to upload, refresh token if necessary
+            try {
+                await uploadToDropbox(folderPath, pdfFileName, pdfBlob);
+                
+                // Upload Video if present
+                if (videoFile && videoFile.size > 0) {
+                    const videoFileName = videoFile.name;
+                    await uploadToDropbox(folderPath, videoFileName, videoFile);
+                } else if (videoLink !== 'N/A') {
+                    const linkFileName = 'video_link.txt';
+                    const linkBlob = new Blob([videoLink], { type: 'text/plain' });
+                    await uploadToDropbox(folderPath, linkFileName, linkBlob);
+                }
+            } catch (error) {
+                if (error.status === 401) {
+                    // Access token expired, refresh and try again
+                    await refreshAccessToken();
+                    await uploadToDropbox(folderPath, pdfFileName, pdfBlob);
+                    
+                    if (videoFile && videoFile.size > 0) {
+                        const videoFileName = videoFile.name;
+                        await uploadToDropbox(folderPath, videoFileName, videoFile);
+                    } else if (videoLink !== 'N/A') {
+                        const linkFileName = 'video_link.txt';
+                        const linkBlob = new Blob([videoLink], { type: 'text/plain' });
+                        await uploadToDropbox(folderPath, linkFileName, linkBlob);
+                    }
+                } else {
+                    throw error;
+                }
             }
 
             // Hide loader
@@ -450,13 +485,48 @@
             document.querySelector('.loader').style.display = 'none';
         }
     });
+
+    async function uploadToDropbox(folderPath, fileName, fileContent) {
+        try {
+            // Create folder
+            await dropbox.filesCreateFolderV2({ path: folderPath });
+        } catch (error) {
+            // Ignore error if folder already exists
+            if (error.status !== 409) {
+                throw error;
+            }
+        }
+
+        // Upload file
+        await dropbox.filesUpload({
+            path: `${folderPath}/${fileName}`,
+            contents: fileContent,
+            mode: 'add',
+            autorename: true,
+            mute: false
+        });
+    }
 });
 
 function validateForm() {
-    // Validation logic remains the same as before
     let errors = [];
-    // Validate required fields, email, and either video file or URL
-    // Return errors and alert the user if necessary
+    const firstName = document.getElementById('firstName').value.trim();
+    const lastName = document.getElementById('lastName').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const paypalEmail = document.getElementById('paypalEmail').value.trim();
+    const videoFile = document.getElementById('video').files[0];
+    const videoLink = document.getElementById('videoLink').value.trim();
+
+    if (!firstName) errors.push('First name is required.');
+    if (!lastName) errors.push('Last name is required.');
+    if (!email || !validateEmail(email)) errors.push('A valid email is required.');
+    if (!paypalEmail || !validateEmail(paypalEmail)) errors.push('A valid PayPal email is required.');
+    if (!videoFile && !videoLink) errors.push('Either a video file or a video link is required.');
+
+    if (errors.length > 0) {
+        alert('Please correct the following errors:\n' + errors.join('\n'));
+        return false;
+    }
     return true;
 }
 

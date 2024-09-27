@@ -152,47 +152,10 @@
                                 <input id="credit-info-handle" name="creditHandle" placeholder="e.g: Mike Tyson">
                             </div>
                         </div>
-                        <div class="paypal">
-                            <label for="paypalEmail">PayPal Email</label>
-                            <input type="email" id="paypalEmail" name="paypalEmail" placeholder="*Example@123.com*" required>
-                            <h4>Featured clips can generate earnings for you</h4>
-                        </div>
+  
                     </div>
                     <div class="digital-signature-container">
-                        <h1>Digital Signature</h1>
-                        <div class="canvas-container">
-                            <canvas id="signatureCanvas"></canvas>
-                            <div class="clear" id="clear">Clear</div>
-                        </div>
-                        <p>
-                            I also understand that there is no guarantee of revenue unless my content is commercially licensed to an unaffiliated third party. I have reviewed and agree to the Contest Rules, Content Submission Agreement, Terms of Service, and Privacy Policy.
-                        </p>
-                        <div class="check-boxes">
-                            <div class="check-box"></div>
-                            <h3></h3>
-                        </div>
-                        <div class="check-boxes">
-                            <div class="check-box"></div>
-                            <h3></h3>
-                        </div>
-                        <div class="check-boxes">
-                            <div class="check-box"></div>
-                            <h3></h3>
-                        </div>
-                        <div class="agreements">
-                            <div class="agreement-one agreement">
-                                <input type="radio" name="exclusiveAgreement" required>
-                                <h5>I have not signed any exclusive agreements for this clip with anyone else</h5>
-                            </div>
-                            <div class="agreement-two agreement">
-                                <input type="radio" name="clipGuidelines" required>
-                                <h5>My clip meets the <a href="clipguidelines.html" target="_blank">Clip Guidelines</a> (does not contain nudity, graphic violence, etc...)</h5>
-                            </div>
-                            <div class="agreement-three agreement">
-                                <input type="radio" name="subscribe">
-                                <h5>Keep me in the know about all things about <span>Scheema</span></h5>
-                            </div>
-                        </div>
+
                         <button class="submit">Submit</button>
                     </div>
                 </form>
@@ -200,9 +163,7 @@
         </section>
 
 
-        <div class="age">
-            
-        </div>
+
 
         <div class="loader">
             <p>Loading</p>
@@ -212,15 +173,6 @@
 </body>
 
 
-
-
-
-
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
-<script src="https://unpkg.com/dropbox/dist/Dropbox-sdk.min.js"></script>
-
-<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
@@ -242,28 +194,6 @@
         fileInput.click();
     });
 
-    const canvas = document.querySelector('#signatureCanvas');
-    const signaturePad = new SignaturePad(canvas, {
-        backgroundColor: 'rgba(255, 255, 255, 0)',
-        penColor: 'black'
-    });
-
-    function resizeCanvas() {
-        const ratio = Math.max(window.devicePixelRatio || 1, 1);
-        canvas.width = canvas.offsetWidth * ratio;
-        canvas.height = canvas.offsetHeight * ratio;
-        canvas.getContext('2d').scale(ratio, ratio);
-        signaturePad.clear();
-    }
-
-    window.addEventListener('resize', resizeCanvas);
-    resizeCanvas();
-
-    document.getElementById('clear').addEventListener('click', function() {
-        signaturePad.clear();
-        document.getElementById('signatureData').value = '';
-    });
-
     const uploadOptions = document.querySelectorAll('.option');
     uploadOptions.forEach(option => {
         option.addEventListener('click', function() {
@@ -279,7 +209,7 @@
 
     // OAuth 2.0 Dropbox setup
     const DROPBOX_CLIENT_ID = 'ekpf8o9wpkutry2'; 
-    const DROPBOX_REDIRECT_URI = 'https://tocjpapi.github.io/Scheema/form.html';
+    const DROPBOX_REDIRECT_URI = 'https://tocjpapi.github.io/Scheema/form2.html';
 
     // Initialize Dropbox authentication
     const dbxAuth = new Dropbox.DropboxAuth({
@@ -332,7 +262,6 @@
             const email = formData.get('email');
             const filmedLocation = formData.get('filmedLocation');
             const clipDescription = formData.get('clipDescription') || 'No description provided';
-            const paypalEmail = formData.get('paypalEmail');
             const creditPlatform = formData.get('creditPlatform') || 'N/A';
             const creditHandle = formData.get('creditHandle') || 'N/A';
             const clipRecorder = formData.get('clipRecorder') || 'N/A';
@@ -340,7 +269,7 @@
             const videoLink = formData.get('videoLink') || 'N/A';
             const platform = formData.get('clipPlatform') || 'N/A';
 
-            if (!firstName || !lastName || !email || !paypalEmail) {
+            if (!firstName || !lastName || !email) {
                 throw new Error('Required fields are missing.');
             }
 
@@ -355,15 +284,11 @@
 
             pdf.setFontSize(12);
 
-            const licenseText = ``;
-
             const textLines = [
-                licenseText,
                 `Name: ${firstName} ${lastName}`,
                 `Email: ${email}`,
                 `Filmed Location: ${filmedLocation}`,
                 `Clip Description: ${clipDescription}`,
-                `PayPal Email: ${paypalEmail}`,
                 `Credit Platform: ${creditPlatform}`,
                 `Credit Handle: ${creditHandle}`,
                 `Clip Recorder: ${clipRecorder}`,
@@ -376,11 +301,6 @@
             textLines.forEach((line, index) => {
                 const lines = pdf.splitTextToSize(line, maxWidth);
                 
-                // Add extra space before the form fields
-                if (index === 1) {
-                    yPosition += 10;
-                }
-
                 lines.forEach(splitLine => {
                     if (yPosition > pageHeight - margin) {
                         pdf.addPage();
@@ -390,19 +310,9 @@
                     yPosition += 7; // Approximate line height
                 });
 
-                // Add extra space after the license text and between form fields
-                yPosition += index === 0 ? 10 : 5;
+                // Add extra space between form fields
+                yPosition += 5;
             });
-
-            // Add signature
-            if (yPosition + 40 > pageHeight - margin) {
-                pdf.addPage();
-                yPosition = margin;
-            }
-            pdf.text("Applicant's Signature:", margin, yPosition);
-            yPosition += 10;
-            const signatureDataUrl = canvas.toDataURL('image/png');
-            pdf.addImage(signatureDataUrl, 'PNG', margin, yPosition, 100, 30);
 
             const timestamp = Date.now();
             const folderPath = `/submission_${timestamp}`;
@@ -460,10 +370,39 @@
 });
 
 function validateForm() {
-    // Validation logic remains the same as before
     let errors = [];
-    // Validate required fields, email, and either video file or URL
-    // Return errors and alert the user if necessary
+    const form = document.getElementById('videoForm');
+    const formData = new FormData(form);
+
+    // Required fields
+    const requiredFields = ['firstName', 'lastName', 'email'];
+    requiredFields.forEach(field => {
+        if (!formData.get(field)) {
+            errors.push(`${field} is required`);
+        }
+    });
+
+    // Email validation
+    const email = formData.get('email');
+    if (email && !validateEmail(email)) {
+        errors.push('Invalid email format');
+    }
+
+    // Video file or URL validation
+    const videoFile = formData.get('videoFile');
+    const videoLink = formData.get('videoLink');
+    if ((!videoFile || videoFile.size === 0) && (!videoLink || videoLink === 'N/A')) {
+        errors.push('Please provide either a video file or a video URL');
+    }
+
+    // Optional fields (no validation required)
+    // 'clipDescription', 'creditPlatform', 'creditHandle', 'clipRecorder'
+
+    if (errors.length > 0) {
+        alert('Please correct the following errors:\n' + errors.join('\n'));
+        return false;
+    }
+
     return true;
 }
 
@@ -472,6 +411,17 @@ function validateEmail(email) {
     return emailPattern.test(email);
 }
 </script>
+
+
+
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+<script src="https://unpkg.com/dropbox/dist/Dropbox-sdk.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
+
+
 
 
 

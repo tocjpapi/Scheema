@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>How old are you?</title>
+
+    <style>
+        @font-face{
+        font-family: "Lato-Regular";
+        src: url("nm5.woff2") format("opentype");
+    }
+    
+        * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        }
+    
+
+        a{
+            color: inherit;
+            text-decoration: none;
+        }
+    
+        html,
+        body {
+        width: 100%;
+        height: 100%;
+        background:#fff;
+        font-family: "Lato-Regular";
+        color: #1a1a1a;
+        
+        }
+
+        .full-page{
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1.2rem;
+        }
+    
+        .block{
+            width: 25rem;
+            height: 9rem;
+            background: #9199ff;
+            color: #fff;
+            border-radius: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: larger;
+        }
+
+        .block4{
+            background: #e0e0e0;
+            color: #1a1a1a;
+        }
+    </style>
+</head>
+<body>
+
+
+
+    <div class="full-page">
+
+        <a href="index.html">
+        <div class="block block1">
+            12 and Under
+        </div>
+    </a>
+
+    <a href="form2.html">
+        <div class="block block2">
+            13 to 17
+        </div>
+    </a>
+
+
+    <a href="form.html">
+        <div class="block block3">
+            18 and Over
+        </div>
+    </a>
+
+
+    <a href="index.html">
+        <div class="block block4">
+            Cancel
+        </div>
+    </a>
+    </div>
+
+
+
+
+</body>
+</html>

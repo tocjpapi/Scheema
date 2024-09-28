@@ -231,7 +231,7 @@
 
         // Function to start OAuth 2.0 flow with code grant
         function authenticateWithDropbox() {
-            dbxAuth.getAuthenticationUrl(DROPBOX_REDIRECT_URI, null, 'code', 'offline', null, null, true)
+            dbxAuth.getAuthenticationUrl(DROPBOX_REDIRECT_URI, null, 'code', 'offline', null, null, 'none')
                 .then((authUrl) => {
                     // Redirect the user to the Dropbox OAuth page
                     window.location.href = authUrl;

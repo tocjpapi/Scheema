@@ -189,7 +189,7 @@ input{
 }
 
 .active-option{
-    background: #9199ff;
+    background: #9198ff8c;
     color: #fff;
 }
 
@@ -220,7 +220,7 @@ input{
 .clip-box-content{
     height: 55px;
     width: 140px;
-    background: #9199ff;
+    background: #9198ff8c;
     color: black;
     border-radius: 10px;
     font-weight: bold;
@@ -421,7 +421,7 @@ canvas{
     bottom: 10px;
     position: absolute;
     z-index: 2;
-    background: #9199ff;
+    background: #9198ff8c;
     width: calc(100% - 20px);
     height: 50px;
 border: 0.02px solid #1a1a1a;
@@ -458,7 +458,7 @@ border: 0.02px solid #1a1a1a;
     height: 50px;
     border-radius: 10px;
 border: 0.02px solid #1a1a1a;
-    background: #9199ff;
+    background: #9198ff8c;
     font-size: 24px;
     font-weight: bold;
     color: #f5f5f5;
@@ -474,4 +474,13 @@ border: 0.02px solid #1a1a1a;
     height: 80px;
     width: 100%;
     background: none;
+}
+
+@media (max-width: 600px){
+    .form-container{
+        background-color: #fff;
+        border: none;
+        width: 100%;
+    
+    }
 }

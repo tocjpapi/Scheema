@@ -230,17 +230,19 @@
         });
 
         // Function to start OAuth 2.0 flow with code grant
-        function authenticateWithDropbox() {
-            dbxAuth.getAuthenticationUrl(DROPBOX_REDIRECT_URI, null, 'code', 'offline', null, null, 'none')
-                .then((authUrl) => {
-                    // Redirect the user to the Dropbox OAuth page
-                    window.location.href = authUrl;
-                })
-                .catch((error) => {
-                    console.error('Error initiating Dropbox authentication:', error);
-                });
-        }
+// Function to start OAuth 2.0 flow with code grant
+function authenticateWithDropbox() {
+    dbxAuth.getAuthenticationUrl(DROPBOX_REDIRECT_URI, null, 'code', 'offline', null, null, 'none') // 'none' is used for includeGrantedScopes
+        .then((authUrl) => {
+            // Redirect the user to the Dropbox OAuth page
+            window.location.href = authUrl;
+        })
+        .catch((error) => {
+            console.error('Error initiating Dropbox authentication:', error);
+        });
+}
 
+        
         // Check if redirected back with an authorization code
         const urlParams = new URLSearchParams(window.location.search);
         const code = urlParams.get('code');
